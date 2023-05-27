@@ -1,2 +1,2 @@
-# auto_photo_org
-Automaticly rename photos and move them to the correct directorys. 
+# Automatic Photo Organizer
+Automatically rename photos and move them to the correct directories. 
