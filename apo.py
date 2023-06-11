@@ -1,6 +1,4 @@
 # TODO Make a nice heading for this code
-# TODO How do I read metadata/exif data?
-### https://pillow.readthedocs.io/en/stable/reference/ExifTags.html
 # TODO Does needed directory exist?
 ### if os.path.exists('file_path')
 # TODO Make the needed directory
@@ -22,7 +20,9 @@
 # TODO Make sure readme file has all instructions for working with the code
 
 from os import walk
-import PIL
+from PIL import Image
+from PIL.ExifTags import TAGS, GPSTAGS
+from datetime import datetime
 
 unsorted_path = 'C:\\Users\\Ueno\\Pictures\\test\\unsorted'
 sorted_path = 'C:\\Users\\Ueno\\Pictures\\test\\photos'
@@ -34,18 +34,41 @@ def get_files(unsorted_path):
         break # Stops walk from adding filenames in subdirectories.
     return files
 
-def get_metadata(file):
+def sort_file(filename):
     pass
 
-def sort_file(file):
-    pass
+def get_metadata(file_path):
+    meta_dict = {}
+    image = Image.open(file_path)
+    exif = image._getexif()
+    if exif:
+        for tag, value in exif.items():
+            decoded = TAGS.get(tag, tag)
+            if decoded == 'DateTime':
+                meta_dict[decoded] = value
+            if decoded == 'GPSInfo':
+                for gps_tag in value:
+                    gps_decoded = GPSTAGS.get(gps_tag, gps_tag)
+                    meta_dict[gps_decoded] = value[gps_tag]
+    return meta_dict  
 
-def needs_manual_sort(file):
-    pass
+def process_timestamp(timestamp):
+    date_object = datetime.strptime(timestamp, f'%Y:%m:%d %H:%M:%S')
+    return date_object.strftime(f'%Y-%m-%d.%H%M%S')
+
+def process_gps(latitude, longitude):
+    return "CITY"
 
 def main():
-    for file in get_files(unsorted_path):
-        sort_file(f'{unsorted_path}\\{file}')
+    for filename in get_files(unsorted_path):
+        filepath = f'{unsorted_path}\\{filename}'
+        meta_dict = get_metadata(filepath)
+        time = process_timestamp(meta_dict['DateTime'])
+        city = process_gps(meta_dict['GPSLatitude'], meta_dict['GPSLongitude'])
+        # keep the ext and differentiate photos taken within 1 second
+        end = filename[-7:]
+        new_filename = f'{time}.{city}.{end}'
+        print(new_filename)
 
 if __name__ == '__main__':
     main()
