@@ -1,7 +1,3 @@
-
-# TODO Handle no metadata
-# TODO Handle partial Metadata
-# TODO Test jpg
 # TODO Test png
 # TODO Test gif
 # TODO Test bmp
@@ -15,6 +11,8 @@
 # pip install pillow, geopy
 # TODO How do I make a requirements file?
 # TODO Make sure readme file has all instructions for working with the code
+# TODO Better logs (aut remove old logs, file per run)
+# TimedRotatingFileHandler? part of logging module.
 
 import os
 from PIL import Image
@@ -49,10 +47,9 @@ def get_metadata(file_path):
 
 def process_timestamp(timestamp):
     date_object = datetime.strptime(timestamp, f'%Y:%m:%d %H:%M:%S')
-    return date_object.strftime(f'%Y-%m-%d.%H%M%S')
+    return date_object.strftime(f'%Y-%m-%d.%H%M%S') + '.'
 
 def process_gps(meta_dict):
-    print(meta_dict)
     geolocator = Nominatim(user_agent='auto_photo_org')
     latitude = convert_gps(*meta_dict['GPSLatitude'], 
                            meta_dict['GPSLatitudeRef'])
@@ -63,7 +60,7 @@ def process_gps(meta_dict):
         zoom = 10,
         language='en-us'
         )
-    return location.address.split(', ', 1)[0]
+    return location.address.split(', ', 1)[0] + '.'
 
 '''
 Pillow returns GPS coordanats as Degrees, Minutes, Seconds
@@ -87,14 +84,31 @@ def sort_file(old, new):
     )
 
 def main():
+    logtime = datetime.now()
+    log = open('log.txt', 'a')
+    print(logtime, 'Starting Batch Rename', file=log)
     for filename in get_files(unsorted_path):
+        print(logtime, 'Processing:', filename, file=log)
         meta_dict = get_metadata(os.path.join(unsorted_path, filename))
-        time = process_timestamp(meta_dict['DateTime'])
-        city = process_gps(meta_dict)
+        if not meta_dict:
+            print('No Metadata:', filename, file=log)
+            continue # Skip files that dont have Metadata
+        if 'DateTime' in meta_dict:
+            time = process_timestamp(meta_dict['DateTime'])
+        else:
+            print(logtime, 'No DateTime:', filename, file=log)
+            continue # Skip files that dont have date/time
+        if 'GPSLatitude' in meta_dict:
+            city = process_gps(meta_dict)
+        else:
+            print(logtime, 'No GPS:', filename, file=log)
+            city = ''
         # keep the ext and differentiate photos taken within 1 second
         end = filename[-7:]
-        new_filename = f'{time}.{city}.{end}'
+        new_filename = f'{time}{city}{end}'
         sort_file(filename, new_filename)
+        print(logtime, 'Success: New filename =', new_filename, file=log)
+        log.close()
 
 if __name__ == '__main__':
     main()
