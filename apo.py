@@ -1,14 +1,6 @@
-# TODO Make a nice heading for this code
-# pip install pillow, geopy
+
 # TODO Handle no metadata
 # TODO Handle partial Metadata
-# TODO Does needed directory exist?
-### if os.path.exists('file_path')
-# TODO Make the needed directory
-### os.mkdir(path to directory)
-### https://www.geeksforgeeks.org/create-a-directory-in-python/#
-# TODO rename and move the file
-### https://stackoverflow.com/questions/2491222/how-to-rename-a-file-using-python
 # TODO Test jpg
 # TODO Test png
 # TODO Test gif
@@ -19,10 +11,12 @@
 # TODO Test avi
 # TODO Test mkv
 # TODO Test very old video
+# TODO Make a nice heading for this code
+# pip install pillow, geopy
 # TODO How do I make a requirements file?
 # TODO Make sure readme file has all instructions for working with the code
 
-from os import walk, path
+import os
 from PIL import Image
 from PIL.ExifTags import TAGS, GPSTAGS
 from datetime import datetime
@@ -33,7 +27,7 @@ sorted_path = 'C:\\Users\\Ueno\\Pictures\\test\\photos'
 
 def get_files(unsorted_path):
     files = []
-    for (dirpath, dirnames, filenames) in walk(unsorted_path):
+    for (dirpath, dirnames, filenames) in os.walk(unsorted_path):
         files.extend(filenames)
         break # Stops walk from adding filenames in subdirectories.
     return files
@@ -81,19 +75,26 @@ def convert_gps(deg, min, sec, ref):
         result = result * -1
     return result
 
-def sort_file(filename):
-    pass
+def sort_file(old, new):
+    new_path = os.path.join(sorted_path, new[:4])
+    if not os.path.exists(sorted_path):
+        os.mkdir(sorted_path)
+    if not os.path.exists(new_path):
+        os.mkdir(new_path)
+    os.rename(
+        os.path.join(unsorted_path, old),
+        os.path.join(new_path, new)
+    )
 
 def main():
     for filename in get_files(unsorted_path):
-        filepath = f'{unsorted_path}\\{filename}'
-        meta_dict = get_metadata(filepath)
+        meta_dict = get_metadata(os.path.join(unsorted_path, filename))
         time = process_timestamp(meta_dict['DateTime'])
         city = process_gps(meta_dict)
         # keep the ext and differentiate photos taken within 1 second
         end = filename[-7:]
         new_filename = f'{time}.{city}.{end}'
-        sort_file(new_filename)
+        sort_file(filename, new_filename)
 
 if __name__ == '__main__':
     main()
