@@ -28,6 +28,7 @@ def get_files(unsorted_path):
 
 def get_metadata(file_path):
     meta_dict = {}
+    gps_tag = 0
     try:
         image = Image.open(file_path)
         exif = image._getexif()
@@ -41,9 +42,12 @@ def get_metadata(file_path):
         if decoded == 'DateTime':
             meta_dict[decoded] = value
         if decoded == 'GPSInfo':
-            for gps_tag in value:
-                gps_decoded = GPSTAGS.get(gps_tag, gps_tag)
-                meta_dict[gps_decoded] = value[gps_tag]
+            gps_tag = tag
+
+    if gps_tag:
+        for tag, value in exif[gps_tag].items():
+            decoded = GPSTAGS.get(tag, tag)
+            meta_dict[decoded] = value
     return meta_dict  
 
 # Converts time from '2023:01:15 18:25:07' to '2023-01-15.182507.'
@@ -94,15 +98,18 @@ def main():
     logtime = datetime.now()
     log = open('log.txt', 'a')
     print(logtime, 'Starting Batch Rename', file=log)
+
     for filename in get_files(unsorted_path):
         print(logtime, 'Processing:', filename, file=log)
         meta_dict = get_metadata(os.path.join(unsorted_path, filename))
-        if not meta_dict: # Skip files that dont have Metadata
+
+        # TODO Move this error checking to its own function.
+        if not meta_dict: 
             print(logtime, 'No Metadata:', filename, file=log)
             continue 
         if 'DateTime' in meta_dict:
             time = process_timestamp(meta_dict['DateTime'])
-        else: # Skip files that dont have date/time
+        else: 
             print(logtime, 'No DateTime:', filename, file=log)
             continue 
         if 'GPSLatitude' in meta_dict:
@@ -110,6 +117,7 @@ def main():
         else:
             print(logtime, 'No GPS:', filename, file=log)
             city = ''
+
         # TODO Make a better per file stamp. More reliably get the ext. 
         end = filename[-7:]
         new_filename = f'{time}{city}{end}'
