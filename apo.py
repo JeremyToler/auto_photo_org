@@ -99,6 +99,9 @@ def main():
     log = open('log.txt', 'a')
     print(logtime, 'Starting Batch Rename', file=log)
 
+    # Numbering files so that no 2 files will have the same name
+    i = 0 
+
     for filename in get_files(unsorted_path):
         print(logtime, 'Processing:', filename, file=log)
         meta_dict = get_metadata(os.path.join(unsorted_path, filename))
@@ -118,11 +121,11 @@ def main():
             print(logtime, 'No GPS:', filename, file=log)
             city = ''
 
-        # TODO Make a better per file stamp. More reliably get the ext. 
-        end = filename[-7:]
-        new_filename = f'{time}{city}{end}'
+        ext = filename.rsplit('.', 1)[0]
+        new_filename = f'{time}{city}{i}.{ext}'
         sort_file(filename, new_filename)
         print(logtime, 'Success: New filename =', new_filename, file=log)
+        i += 1
     log.close()
 
 if __name__ == '__main__':
