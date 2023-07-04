@@ -1,19 +1,13 @@
-'''
-    PAVONINE - Photo And Video Organizer
-'''
-# TODO Add video support
-# TODO Test mp4
-# TODO Test avi
-# TODO Test mkv
-# TODO Test very old video
 # TODO Make a nice heading for this code
-# pip install pillow, geopy
+# pip install pillow, geopy, ffmpeg
 # TODO How do I make a requirements file?
 # TODO Make sure readme file has all instructions for working with the code
+# TODO After proccessing files check if there are more than 20 unproccessed images and email/slack me. 
 
 import os
 import config
 import logging
+import re
 from PIL import Image
 from PIL.ExifTags import TAGS, GPSTAGS
 from datetime import datetime
@@ -32,6 +26,7 @@ logging.basicConfig(
 )
 
 logging = logging.getLogger('APO')
+
 
 def get_files(unsorted_path):
     files = []
@@ -56,7 +51,7 @@ def get_metadata(file_path):
     for tag, value in exif.items():
         decoded = TAGS.get(tag, tag)
         if decoded == 'DateTime':
-            meta_dict[decoded] = value
+            meta_dict[decoded] = datetime.strptime(value, f'%Y:%m:%d %H:%M:%S')
         if decoded == 'GPSInfo':
             gps_tag = tag
 
@@ -66,11 +61,31 @@ def get_metadata(file_path):
             meta_dict[decoded] = value
     return meta_dict  
 
-# Converts time from '2023:01:15 18:25:07' to '2023-01-15.182507.'
+'''
+Most of the filenames that were made by a camera or phone have the date
+in order YYYY MM DD HH MM SS along with other info such as PXL as well
+as other formatting. Removing all non digit charecters from the strings
+will put them all in the same order and slicing the first 14 get rid of
+numbering or miliseconds.
+'''
+def time_from_name(filename):
+    stripped = re.sub(r"\D", "", filename)[:14]
+    logging.debug(f'{filename} stripped to {stripped}')
+    if not stripped.startswith('20'):
+        logging.warning(f'Could not extract time from {filename}')
+        logging.debug(f'stripped string does not start with 20')
+        return {}
+    try:
+        timestamp = datetime.strptime(stripped, '%Y%m%d%H%M%S')
+    except:
+        logging.warning(f'Could not extract time from {filename}')
+        return {}
+    else:
+        return {'DateTime': timestamp}
+
 def process_timestamp(timestamp):
-    date_object = datetime.strptime(timestamp, f'%Y:%m:%d %H:%M:%S')
-    date = date_object.strftime(f'%Y-%m-%d')
-    time = date_object.strftime(f'%H%M%S')
+    date = timestamp.strftime(f'%Y-%m-%d')
+    time = timestamp.strftime(f'%H%M%S')
     return {'date': date, 'time': time}
 
 '''
@@ -102,6 +117,7 @@ def convert_gps(deg, min, sec, ref):
     return result
 
 def sort_file(old, new):
+    i = 0
     new_path = os.path.join(config.sorted_path, new[:4])
     new_file = os.path.join(new_path, new)
     old_file = os.path.join(config.unsorted_path, old)
@@ -109,35 +125,41 @@ def sort_file(old, new):
         os.mkdir(config.sorted_path)
     if not os.path.exists(new_path):
         os.mkdir(new_path)
-    os.rename(old_file, new_file)
+    while os.path.isfile(new_file):
+        split_name = new_file.rsplit('.', 1)
+        new_file = f'{split_name[0]}{i}.{split_name[1]}'
+        i += 1
+    else:
+        os.rename(old_file, new_file)
     logging.info(f'{old_file} has been renamed {new_file}')
 
 def main():
-    # Numbering files so that no 2 files will have the same name
-    i = 0 
     for filename in get_files(config.unsorted_path):
         logging.debug(f'Proccessing {filename}')
         meta_dict = get_metadata(os.path.join(config.unsorted_path, filename))
 
-        # TODO Move this error checking to its own function.
         if not meta_dict: 
-            logging.warning(f'{filename} has no METADATA')
-            continue 
+            logging.warning(f'{filename} has no METADATA.')
+            meta_dict = time_from_name(filename)
         if 'DateTime' in meta_dict:
             datetime = process_timestamp(meta_dict['DateTime'])
         else: 
             logging.warning(f'{filename} has no DATETIME Data')
             continue 
         if 'GPSLatitude' in meta_dict:
-            city = process_gps(meta_dict)
+            try:
+                city = process_gps(meta_dict)
+            except:
+                logging.exception(f'Unable to proccess GPS for {filename}')
+                continue
+
         else:
             logging.warning(f'{filename} has no GPS Data')
             city = ''
 
         ext = filename.rsplit('.', 1)[1]
-        new_filename = f'{datetime["date"]}.{datetime["time"]}{i}{city}.{ext}'
+        new_filename = f'{datetime["date"]}.{datetime["time"]}{city}.{ext}'
         sort_file(filename, new_filename)
-        i += 1
 
 if __name__ == '__main__':
     main()
