@@ -1,5 +1,5 @@
 # TODO Make a nice heading for this code
-# pip install pillow, geopy, ffmpeg
+# pip install pillow, geopy
 # TODO How do I make a requirements file?
 # TODO Make sure readme file has all instructions for working with the code
 # TODO After proccessing files check if there are more than 20 unproccessed images and email/slack me. 
@@ -24,16 +24,13 @@ logging.basicConfig(
     format='%(asctime)s :: %(name)s :: %(levelname)s :: %(message)s',
     level=loglevel
 )
-
 logging = logging.getLogger('APO')
-
 
 def get_files(unsorted_path):
     files = []
     for (dirpath, dirnames, filenames) in os.walk(unsorted_path):
         files.extend(filenames)
         # Stop walk from adding filenames in subdirectories.
-        # TODO Change of plans, lets include subdirectories. 
         break 
     return files
 
@@ -51,6 +48,7 @@ def get_metadata(file_path):
     for tag, value in exif.items():
         decoded = TAGS.get(tag, tag)
         if decoded == 'DateTime':
+            logging.debug(f'RAW Timestamp from Metadata = {value}')
             meta_dict[decoded] = datetime.strptime(value, f'%Y:%m:%d %H:%M:%S')
         if decoded == 'GPSInfo':
             gps_tag = tag
@@ -76,6 +74,7 @@ def time_from_name(filename):
         logging.debug(f'stripped string does not start with 20')
         return {}
     try:
+        logging.debug(f'Stripped Timestamp from filename = {stripped}')
         timestamp = datetime.strptime(stripped, '%Y%m%d%H%M%S')
     except:
         logging.warning(f'Could not extract time from {filename}')
@@ -138,9 +137,9 @@ def main():
         logging.debug(f'Proccessing {filename}')
         meta_dict = get_metadata(os.path.join(config.unsorted_path, filename))
 
-        if not meta_dict: 
+        if not meta_dict or 'DateTime' not in meta_dict: 
             logging.warning(f'{filename} has no METADATA.')
-            meta_dict = time_from_name(filename)
+            meta_dict.update(time_from_name(filename))
         if 'DateTime' in meta_dict:
             datetime = process_timestamp(meta_dict['DateTime'])
         else: 
@@ -152,7 +151,6 @@ def main():
             except:
                 logging.exception(f'Unable to proccess GPS for {filename}')
                 continue
-
         else:
             logging.warning(f'{filename} has no GPS Data')
             city = ''
