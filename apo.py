@@ -1,5 +1,4 @@
 # TODO Make a nice heading for this code
-# pip install pillow, geopy
 # TODO How do I make a requirements file?
 # TODO Make sure readme file has all instructions for working with the code
 # TODO After proccessing files check if there are more than 20 unproccessed images and email/slack me. 
@@ -67,7 +66,7 @@ will put them all in the same order and slicing the first 14 get rid of
 numbering or miliseconds.
 '''
 def time_from_name(filename):
-    stripped = re.sub(r"\D", "", filename)[:14]
+    stripped = re.sub(r'\D', '', filename)[:14]
     logging.debug(f'{filename} stripped to {stripped}')
     if not stripped.startswith('20'):
         logging.warning(f'Could not extract time from {filename}')
@@ -75,7 +74,10 @@ def time_from_name(filename):
         return {}
     try:
         logging.debug(f'Stripped Timestamp from filename = {stripped}')
-        timestamp = datetime.strptime(stripped, '%Y%m%d%H%M%S')
+        if len(stripped) == 14:
+            timestamp = datetime.strptime(stripped, '%Y%m%d%H%M%S')
+        elif len(stripped) == 8:
+            timestamp = datetime.strptime(stripped, '%Y%m%d')
     except:
         logging.warning(f'Could not extract time from {filename}')
         return {}
@@ -102,8 +104,8 @@ def process_gps(meta_dict):
         zoom = 10,
         language='en-us'
         )
-    city = location.address.split(', ', 1)[0]
-    return '.' + city.replace(' ', '_')
+    city = location.address.split(', ', 1)[0].replace(' ', '_')
+    return '.' + re.sub(r'\W', '', city)
 
 '''
 Pillow returns GPS coordanats as Degrees, Minutes, Seconds
