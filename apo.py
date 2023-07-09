@@ -66,18 +66,17 @@ will put them all in the same order and slicing the first 14 get rid of
 numbering or miliseconds.
 '''
 def time_from_name(filename):
-    stripped = re.sub(r'\D', '', filename)[:14]
-    logging.debug(f'{filename} stripped to {stripped}')
+    stripped = re.sub(r'\D', '', filename.rsplit('.', 1)[0])[:14]
+    logging.debug(f'{filename} stripped to {stripped} len = {len(stripped)}')
     if not stripped.startswith('20'):
         logging.warning(f'Could not extract time from {filename}')
         logging.debug(f'stripped string does not start with 20')
         return {}
     try:
-        logging.debug(f'Stripped Timestamp from filename = {stripped}')
-        if len(stripped) == 14:
+        if len(stripped) == 15:
             timestamp = datetime.strptime(stripped, '%Y%m%d%H%M%S')
-        elif len(stripped) == 8:
-            timestamp = datetime.strptime(stripped, '%Y%m%d')
+        else:
+            timestamp = datetime.strptime(stripped[:8], '%Y%m%d')
     except:
         logging.warning(f'Could not extract time from {filename}')
         return {}
