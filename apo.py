@@ -46,9 +46,10 @@ def get_metadata(file_path):
     
     for tag, value in exif.items():
         decoded = TAGS.get(tag, tag)
+        logging.debug(f'Metadata Options: Tag = {decoded} Value = {value}')
         if decoded == 'DateTime':
             logging.debug(f'RAW Timestamp from Metadata = {value}')
-            meta_dict[decoded] = datetime.strptime(value, f'%Y:%m:%d %H:%M:%S')
+            meta_dict[decoded] = value
         if decoded == 'GPSInfo':
             gps_tag = tag
 
@@ -56,38 +57,9 @@ def get_metadata(file_path):
         for tag, value in exif[gps_tag].items():
             decoded = GPSTAGS.get(tag, tag)
             meta_dict[decoded] = value
+    logging.debug('-------------------GPS TAGS----------------------')
+    logging.debug(meta_dict)
     return meta_dict  
-
-'''
-Most of the filenames that were made by a camera or phone have the date
-in order YYYY MM DD HH MM SS along with other info such as PXL as well
-as other formatting. Removing all non digit charecters from the strings
-will put them all in the same order and slicing the first 14 get rid of
-numbering or miliseconds.
-'''
-def time_from_name(filename):
-    stripped = re.sub(r'\D', '', filename.rsplit('.', 1)[0])[:14]
-    logging.debug(f'{filename} stripped to {stripped}')
-    if not stripped.startswith('20'):
-        logging.warning(f'Could not extract time from {filename}')
-        logging.debug(f'stripped string does not start with 20')
-        return {}
-    try:
-        logging.debug(f'Stripped Timestamp from filename = {stripped}')
-        if len(stripped) == 14:
-            timestamp = datetime.strptime(stripped, '%Y%m%d%H%M%S')
-        else:
-            timestamp = datetime.strptime(stripped[8], '%Y%m%d')
-    except:
-        logging.warning(f'Could not extract time from {filename}')
-        return {}
-    else:
-        return {'DateTime': timestamp}
-
-def process_timestamp(timestamp):
-    date = timestamp.strftime(f'%Y-%m-%d')
-    time = timestamp.strftime(f'%H%M%S')
-    return {'date': date, 'time': time}
 
 '''
 Use geopy to interact with the Nominatim (OpenStreetMap) API
@@ -117,6 +89,47 @@ def convert_gps(deg, min, sec, ref):
         result = result * -1
     return result
 
+def get_time(meta_dict, filename):
+    if 'DateTime' in meta_dict:
+        timestamp = datetime.strptime(meta_dict['DateTime'], f'%Y:%m:%d %H:%M:%S')
+        date = timestamp.strftime(f'%Y-%m-%d')
+        time = '.' + timestamp.strftime(f'%H%M%S')
+    else:
+        date, time = time_from_name(filename)
+    if 'GPSDateStamp' in meta_dict and time == '':
+        timestamp = datetime.strptime(meta_dict['GPSDateStamp'], f'%Y:%m:%d')
+        date = timestamp.strftime(f'%Y-%m-%d')
+        time = ''
+    return [date, time]
+
+'''
+Most of the filenames that were made by a camera or phone have the date
+in order YYYY MM DD HH MM SS along with other info such as PXL as well
+as other formatting. Removing all non digit charecters from the strings
+will put them all in the same order and slicing the first 14 get rid of
+numbering or miliseconds.
+'''
+def time_from_name(filename):
+    date = time = ''
+    stripped = re.sub(r'\D', '', filename.rsplit('.', 1)[0])[:14]
+    logging.debug(f'{filename} stripped to {stripped}')
+    if not stripped.startswith('20'):
+        logging.warning(f'Could not extract time from {filename}')
+        logging.debug(f'stripped string does not start with 20')
+        return (date, time)
+    try:
+        logging.debug(f'Stripped Timestamp from filename = {stripped}')
+        if len(stripped) == 14:
+            timestamp = datetime.strptime(stripped, '%Y%m%d%H%M%S')
+            date = timestamp.strftime(f'%Y-%m-%d')
+            time = '.' + timestamp.strftime(f'%H%M%S')
+        else:
+            timestamp = datetime.strptime(stripped[8], '%Y%m%d')
+            date = timestamp.strftime(f'%Y-%m-%d')
+    except:
+        logging.warning(f'Could not extract time from {filename}')
+    return (date, time)
+
 def sort_file(old, new):
     i = 0
     new_path = os.path.join(config.sorted_path, new[:4])
@@ -138,27 +151,25 @@ def main():
     for filename in get_files(config.unsorted_path):
         logging.debug(f'Proccessing {filename}')
         meta_dict = get_metadata(os.path.join(config.unsorted_path, filename))
-
-        if not meta_dict or 'DateTime' not in meta_dict: 
-            logging.warning(f'{filename} has no METADATA.')
-            meta_dict.update(time_from_name(filename))
-        if 'DateTime' in meta_dict:
-            datetime = process_timestamp(meta_dict['DateTime'])
-        else: 
-            logging.warning(f'{filename} has no DATETIME Data')
-            continue 
+        date, time = get_time(meta_dict, filename)
+        if date == '': 
+            logging.error(f'Cannot get timestamp from {filename}')
+            continue
         if 'GPSLatitude' in meta_dict:
             try:
                 city = process_gps(meta_dict)
             except:
+                ''' 
+                Network issues can cause this. 
+                Halting renaming this file so it can try again later.
+                '''
                 logging.exception(f'Unable to proccess GPS for {filename}')
                 continue
         else:
             logging.warning(f'{filename} has no GPS Data')
             city = ''
-
         ext = filename.rsplit('.', 1)[1]
-        new_filename = f'{datetime["date"]}.{datetime["time"]}{city}.{ext}'
+        new_filename = f'{date}{time}{city}.{ext}'
         sort_file(filename, new_filename)
 
 if __name__ == '__main__':
