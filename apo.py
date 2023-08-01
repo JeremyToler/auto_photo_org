@@ -1,5 +1,4 @@
 # TODO Make a nice heading for this code
-# TODO How do I make a requirements file?
 # TODO Make sure readme file has all instructions for working with the code
 # TODO After proccessing files check if there are more than 20 unproccessed images and email/slack me. 
 
