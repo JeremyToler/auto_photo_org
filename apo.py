@@ -76,7 +76,7 @@ def process_gps(meta_dict):
         language='en-us'
         )
     city = location.address.split(', ', 1)[0].replace(' ', '_')
-    return '.' + re.sub(r'\W', '', city)
+    return '.' + re.sub(r'[^(A-Z)(a-z)(0-9)_]', '', city)
 
 '''
 Pillow returns GPS coordanats as Degrees, Minutes, Seconds
@@ -140,7 +140,8 @@ def sort_file(old, new):
         os.mkdir(new_path)
     while os.path.isfile(new_file):
         split_name = new_file.rsplit('.', 1)
-        new_file = f'{split_name[0]}({i}).{split_name[1]}'
+        newname = re.sub(r'\(.*\)', '', split_name[0])
+        new_file = f'{newname}({i}).{split_name[1]}'
         i += 1
     else:
         os.rename(old_file, new_file)
