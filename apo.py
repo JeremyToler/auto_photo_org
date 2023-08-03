@@ -141,7 +141,7 @@ def sort_file(old, new):
     while os.path.isfile(new_file):
         split_name = new_file.rsplit('.', 1)
         newname = re.sub(r'\(.*\)', '', split_name[0])
-        new_file = f'{newname}({i}).{split_name[1]}'
+        new_file = f'{newname}({i:04d}).{split_name[1]}'
         i += 1
     else:
         os.rename(old_file, new_file)
