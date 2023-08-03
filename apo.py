@@ -65,7 +65,7 @@ Use geopy to interact with the Nominatim (OpenStreetMap) API
 At zoom level 10 Address returns City, County, State, Country
 '''
 def process_gps(meta_dict):
-    geolocator = Nominatim(user_agent=config.nominatum_agent)
+    geolocator = Nominatim(user_agent=config.user_agent)
     latitude = convert_gps(*meta_dict['GPSLatitude'], 
                            meta_dict['GPSLatitudeRef'])
     longitude = convert_gps(*meta_dict['GPSLongitude'],
