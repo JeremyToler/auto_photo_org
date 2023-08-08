@@ -1,10 +1,10 @@
 # TODO Make a nice heading for this code
-# TODO After proccessing files check if there are more than 20 unproccessed images and email/slack me. 
 
 import os
 import config
 import logging
 import re
+import slack_sdk as slack
 from PIL import Image
 from PIL.ExifTags import TAGS, GPSTAGS
 from datetime import datetime
@@ -148,6 +148,27 @@ def sort_file(old, new):
         os.rename(old_file, new_file)
     logging.info(f'{old_file} has been renamed {new_file}')
 
+def manual_sort_check():
+    print('manual start')
+    unsorted_count = len(get_files(config.unsorted_path))
+    print(unsorted_count)
+    if unsorted_count > config.alert_threshold:
+        print("slack check")
+        if len(config.slack_oauth) < 50:
+            print("bad oauth")
+            logging.info('Slack not enabled or invalid oauth')
+        else:
+            print("slack sending")
+            client = slack.WebClient(token=config.slack_oauth)
+            client.chat_postMessage(
+                channel=config.slack_channel,
+                text=f'{unsorted_count} files need to be manually sorted',
+                icon_emoji = ':camera:',
+                username = 'apo'
+                )
+            print("slack sent")
+        
+
 def main():
     for filename in get_files(config.unsorted_path):
         logging.debug(f'Proccessing {filename}')
@@ -172,6 +193,7 @@ def main():
         ext = filename.rsplit('.', 1)[1]
         new_filename = f'{date}{time}{city}.{ext}'
         sort_file(filename, new_filename)
+    manual_sort_check()
 
 if __name__ == '__main__':
     main()

@@ -29,7 +29,7 @@ Example:
     │   ├── 2023-07-25.143521.Paris.png
     │   └── 2023-07-25.150302.Paris.png
     └── 2007/
-        ├── 2007-12-24.080149.Mesa.jpg
+        ├── 2007-12-24.080149.Mesa.jpg 
         ├── 2007-12-24.080149.Mesa(1).jpg
         └── 2007-12-24.080150.Mesa.jpg
 </pre>
@@ -39,13 +39,21 @@ Example:
 **Edit `config.py`**<br><br>
 **unsorted_path:** Path to files you want to rename/organize<br>
 **sorted_path:** Folder you want the files to move to<br>
-**user_agent:** Normally this would be where an API key goes, however OpenMaps simply needs any string to monitor traffic demands.  Any string input works, just don't leave it blank.  <br>
+**user_agent:** Normally this would be where an API key goes, however OpenMaps simply needs any string to monitor traffic demands.  Any string input works, just don't leave it blank.<br>
+_If using a SlackBot to alert when files need manual intervention:_<br>
+**alert_threshold:** Number of files in the unsorted directory after script runs and before you get pinged<br>
+**slack_oath:** SlackBot oauth token<br>
+**slack_channel:** Slack channel the bot will post to<br>
 **debug_mode:** Change to true if you need more info from the debug log.  [Further documentation](https://geopy.readthedocs.io/en/stable/index.html?highlight=user_agent)<br>
-<br>
+<br><br>
+SlackBot permissions needed:<br>
+- chat:write
+- chat:write.customize
+- chat:write.public
+<br><br>
 **Install the requirements:** `pip install -r requirements.txt`<br>
 <br>
 **Run the script:** `python apo.py`<br>
-
 <br>
 
 ## Troubleshooting
