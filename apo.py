@@ -1,5 +1,4 @@
 # TODO Make a nice heading for this code
-# TODO Make sure readme file has all instructions for working with the code
 # TODO After proccessing files check if there are more than 20 unproccessed images and email/slack me. 
 
 import os
@@ -30,6 +29,8 @@ def get_files(unsorted_path):
         files.extend(filenames)
         # Stop walk from adding filenames in subdirectories.
         break 
+    if not files:
+        logging.info(f'{unsorted_path} is empty')
     return files
 
 def get_metadata(file_path):
