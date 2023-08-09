@@ -90,17 +90,30 @@ def convert_gps(deg, min, sec, ref):
     return result
 
 def get_time(meta_dict, filename):
+    date = ''
+    time = ''
     if 'DateTime' in meta_dict:
         timestamp = datetime.strptime(meta_dict['DateTime'], f'%Y:%m:%d %H:%M:%S')
         date = timestamp.strftime(f'%Y-%m-%d')
         time = '.' + timestamp.strftime(f'%H%M%S')
-    else:
+    if not date:
+        date, time = created_time(filename)
+    if not date:
         date, time = time_from_name(filename)
-    if 'GPSDateStamp' in meta_dict and time == '':
-        timestamp = datetime.strptime(meta_dict['GPSDateStamp'], f'%Y:%m:%d')
-        date = timestamp.strftime(f'%Y-%m-%d')
-        time = ''
+    if not date:
+        if 'GPSDateStamp' in meta_dict and time == '':
+            timestamp = datetime.strptime(meta_dict['GPSDateStamp'], f'%Y:%m:%d')
+            date = timestamp.strftime(f'%Y-%m-%d')
+            time = ''
     return [date, time]
+
+def created_time(filename):
+    filepath = os.path.join(config.unsorted_path, filename)
+    timestamp = datetime.fromtimestamp(os.path.getctime(filepath))
+    logging.debug(f'File Created: {timestamp}')
+    date = timestamp.strftime(f'%Y-%m-%d')
+    time = '.' + timestamp.strftime(f'%H%M%S')
+    return (date, time)
 
 '''
 Most of the filenames that were made by a camera or phone have the date
