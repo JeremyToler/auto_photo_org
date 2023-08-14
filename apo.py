@@ -91,24 +91,35 @@ def convert_gps(deg, min, sec, ref):
 def get_time(meta_dict, filename):
     date = ''
     time = ''
-    if 'DateTime' in meta_dict:
-        timestamp = datetime.strptime(meta_dict['DateTime'], f'%Y:%m:%d %H:%M:%S')
-        logging.debug(f'Getting time from Metadata DateTime {timestamp}')
-        date = timestamp.strftime(f'%Y-%m-%d')
-        time = '.' + timestamp.strftime(f'%H%M%S')
+    if 'DateTimeOriginal' in meta_dict:
+        date, time = time_from_metadata('DateTimeOriginal', meta_dict)
+    if not date and 'DateTime' in meta_dict:
+        date, time = time_from_metadata('DateTime', meta_dict)
     if not date:
         date, time = time_from_name(filename)
+    if not date and 'GPSDateStamp' in meta_dict:
+        date, time = time_from_metadata('GPSDateStamp', meta_dict)
     if not date:
-        if 'GPSDateStamp' in meta_dict and time == '':
-            timestamp = datetime.strptime(meta_dict['GPSDateStamp'], f'%Y:%m:%d')
-            logging.debug(f'Getting time from GPS Metadata {timestamp}')
-            date = timestamp.strftime(f'%Y-%m-%d')
-            time = ''
-    if not date:
-        date, time = created_time(filename)
+        date, time = time_from_file_data(filename)
     return [date, time]
 
-def created_time(filename):
+def time_from_metadata(key, meta_dict):
+    try:
+        timestamp = datetime.strptime(
+            meta_dict[key],
+            f'%Y:%m:%d %H:%M:%S')
+        date = timestamp.strftime(f'%Y-%m-%d')
+        time = '.' + timestamp.strftime(f'%H%M%S')
+    except:
+        timestamp = datetime.strptime(
+            meta_dict[key],
+            f'%Y:%m:%d')
+        date = timestamp.strftime(f'%Y-%m-%d')
+        time = ''
+    logging.debug(f'Getting time from Metadata {key}: {timestamp}')
+    return (date, time)
+
+def time_from_file_data(filename):
     filepath = os.path.join(config.unsorted_path, filename)
     timestamp = datetime.fromtimestamp(os.path.getctime(filepath))
     logging.debug(f'Gatting time from file creation date {timestamp}')
