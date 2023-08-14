@@ -46,18 +46,17 @@ def get_metadata(file_path):
     
     for tag, value in exif.items():
         decoded = TAGS.get(tag, tag)
-        logging.debug(f'Metadata Options: Tag = {decoded} Value = {value}')
-        if decoded == 'DateTime':
-            logging.debug(f'RAW Timestamp from Metadata = {value}')
-            meta_dict[decoded] = value
         if decoded == 'GPSInfo':
             gps_tag = tag
+            logging.debug('GPS Metadata Detected')
+        else:
+            meta_dict[decoded] = value
 
     if gps_tag:
         for tag, value in exif[gps_tag].items():
             decoded = GPSTAGS.get(tag, tag)
             meta_dict[decoded] = value
-    logging.debug('-------------------GPS TAGS----------------------')
+    logging.debug('-------------------All Metatags----------------------')
     logging.debug(meta_dict)
     return meta_dict  
 
@@ -94,23 +93,25 @@ def get_time(meta_dict, filename):
     time = ''
     if 'DateTime' in meta_dict:
         timestamp = datetime.strptime(meta_dict['DateTime'], f'%Y:%m:%d %H:%M:%S')
+        logging.debug(f'Getting time from Metadata DateTime {timestamp}')
         date = timestamp.strftime(f'%Y-%m-%d')
         time = '.' + timestamp.strftime(f'%H%M%S')
-    if not date:
-        date, time = created_time(filename)
     if not date:
         date, time = time_from_name(filename)
     if not date:
         if 'GPSDateStamp' in meta_dict and time == '':
             timestamp = datetime.strptime(meta_dict['GPSDateStamp'], f'%Y:%m:%d')
+            logging.debug(f'Getting time from GPS Metadata {timestamp}')
             date = timestamp.strftime(f'%Y-%m-%d')
             time = ''
+    if not date:
+        date, time = created_time(filename)
     return [date, time]
 
 def created_time(filename):
     filepath = os.path.join(config.unsorted_path, filename)
     timestamp = datetime.fromtimestamp(os.path.getctime(filepath))
-    logging.debug(f'File Created: {timestamp}')
+    logging.debug(f'Gatting time from file creation date {timestamp}')
     date = timestamp.strftime(f'%Y-%m-%d')
     time = '.' + timestamp.strftime(f'%H%M%S')
     return (date, time)
@@ -123,6 +124,7 @@ will put them all in the same order and slicing the first 14 get rid of
 numbering or miliseconds.
 '''
 def time_from_name(filename):
+    logging.debug(f'Getting time from Filename')
     date = time = ''
     stripped = re.sub(r'\D', '', filename.rsplit('.', 1)[0])[:14]
     logging.debug(f'{filename} stripped to {stripped}')
