@@ -1,4 +1,8 @@
-# TODO Make a nice heading for this code
+'''
+Auto Photo Org - Jeremy Toler
+Rename's and sorts photos, for more info check the readme
+https://github.com/JeremyToler/auto_photo_org
+'''
 
 import os
 import config
@@ -176,7 +180,6 @@ def sort_file(old, new):
 
 def manual_sort_check():
     unsorted_count = len(get_files(config.unsorted_path))
-    print(unsorted_count)
     if unsorted_count > config.alert_threshold:
         if len(config.slack_oauth) < 50:
             logging.info('Slack not enabled or invalid oauth')
