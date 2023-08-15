@@ -169,7 +169,7 @@ def sort_file(old, new):
         os.mkdir(new_path)
     while os.path.isfile(new_file):
         split_name = new_file.rsplit('.', 1)
-        newname = re.sub(r'.*', '', split_name[0])
+        newname = re.sub(r'(\.\d\d\d\d)', '', split_name[0])
         new_file = f'{newname}.{i:04d}.{split_name[1]}'
         i += 1
     else:
