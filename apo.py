@@ -77,8 +77,12 @@ def process_gps(meta_dict):
         zoom = 10,
         language='en-us'
         )
-    city = location.address.split(', ', 1)[0].replace(' ', '_')
-    return '.' + re.sub(r'[^(A-Z)(a-z)(0-9)_]', '', city)
+    try:
+        city = location.address.split(', ', 1)[0].replace(' ', '_')
+    except:
+        return ''
+    else:
+        return '.' + re.sub(r'[^(A-Z)(a-z)(0-9)_]', '', city)
 
 '''
 Pillow returns GPS coordinates as Degrees, Minutes, Seconds
