@@ -3,7 +3,6 @@ Auto Photo Org - Jeremy Toler
 Renames and sorts photos, for more info check the readme
 https://github.com/JeremyToler/auto_photo_org
 '''
-
 import os
 import config
 import logging
@@ -57,13 +56,10 @@ def get_metadata(file_path):
             logging.debug('Empty Timestamp found')
         else:
             meta_dict[decoded] = value
-
     if gps_tag:
         for tag, value in exif[gps_tag].items():
             decoded = GPSTAGS.get(tag, tag)
             meta_dict[decoded] = value
-    logging.debug('-------------------All Metatags----------------------')
-    logging.debug(meta_dict)
     return meta_dict  
 
 '''
@@ -85,8 +81,8 @@ def process_gps(meta_dict):
     return '.' + re.sub(r'[^(A-Z)(a-z)(0-9)_]', '', city)
 
 '''
-Pillow returns GPS coordanats as Degrees, Minutes, Seconds
-Nominatim expects GPS coordanats to be Decimal Degrees
+Pillow returns GPS coordinates as Degrees, Minutes, Seconds
+Nominatim expects GPS coordinates to be Decimal Degrees
 '''
 def convert_gps(deg, min, sec, ref):
     result = float(deg) + float(min) / 60 + float(sec) / 3600
@@ -107,20 +103,16 @@ def get_time(meta_dict, filename):
         date, time = time_from_metadata('GPSDateStamp', meta_dict)
     if not date:
         date, time = time_from_file_data(filename)
-    return [date, time]
+    return (date, time)
 
 def time_from_metadata(key, meta_dict):
     try:
-        timestamp = datetime.strptime(
-            meta_dict[key],
-            f'%Y:%m:%d %H:%M:%S')
+        timestamp = datetime.strptime(meta_dict[key], f'%Y:%m:%d %H:%M:%S')
         date = timestamp.strftime(f'%Y-%m-%d')
         time = '.' + timestamp.strftime(f'%H%M%S')
     except:
         try:
-            timestamp = datetime.strptime(
-                meta_dict[key],
-                f'%Y:%m:%d')
+            timestamp = datetime.strptime(meta_dict[key], f'%Y:%m:%d')
             date = timestamp.strftime(f'%Y-%m-%d')
             time = ''
         except:
@@ -140,9 +132,9 @@ def time_from_file_data(filename):
 '''
 Most of the filenames that were made by a camera or phone have the date
 in order YYYY MM DD HH MM SS along with other info such as PXL as well
-as other formatting. Removing all non digit charecters from the strings
+as other formatting. Removing all non digit characters from the strings
 will put them all in the same order and slicing the first 14 get rid of
-numbering or miliseconds.
+numbering or milliseconds.
 '''
 def time_from_name(filename):
     logging.debug(f'Getting time from Filename')
@@ -200,7 +192,7 @@ def manual_sort_check():
 
 def main():
     for filename in get_files(config.unsorted_path):
-        logging.debug(f'Proccessing {filename}')
+        logging.debug(f'Processing {filename}')
         meta_dict = get_metadata(os.path.join(config.unsorted_path, filename))
         date, time = get_time(meta_dict, filename)
         if date == '': 
@@ -214,7 +206,7 @@ def main():
                 Network issues can cause this. 
                 Halting renaming this file so it can try again later.
                 '''
-                logging.exception(f'Unable to proccess GPS for {filename}')
+                logging.exception(f'Unable to process GPS for {filename}')
                 continue
         else:
             logging.warning(f'{filename} has no GPS Data')
