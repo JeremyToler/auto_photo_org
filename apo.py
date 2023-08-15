@@ -195,7 +195,7 @@ def main():
         logging.debug(f'Processing {filename}')
         meta_dict = get_metadata(os.path.join(config.unsorted_path, filename))
         date, time = get_time(meta_dict, filename)
-        if date == '': 
+        if not date: 
             logging.error(f'Cannot get timestamp from {filename}')
             continue
         if 'GPSLatitude' in meta_dict:
