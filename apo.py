@@ -1,6 +1,6 @@
 '''
 Auto Photo Org - Jeremy Toler
-Rename's and sorts photos, for more info check the readme
+Renames and sorts photos, for more info check the readme
 https://github.com/JeremyToler/auto_photo_org
 '''
 
@@ -35,7 +35,7 @@ def get_files(unsorted_path):
         break 
     if not files:
         logging.info(f'{unsorted_path} is empty')
-    return files
+    return files.sort()
 
 def get_metadata(file_path):
     meta_dict = {}
@@ -115,11 +115,15 @@ def time_from_metadata(key, meta_dict):
         date = timestamp.strftime(f'%Y-%m-%d')
         time = '.' + timestamp.strftime(f'%H%M%S')
     except:
-        timestamp = datetime.strptime(
-            meta_dict[key],
-            f'%Y:%m:%d')
-        date = timestamp.strftime(f'%Y-%m-%d')
-        time = ''
+        try:
+            timestamp = datetime.strptime(
+                meta_dict[key],
+                f'%Y:%m:%d')
+            date = timestamp.strftime(f'%Y-%m-%d')
+            time = ''
+        except:
+            date = ''
+            time = ''
     logging.debug(f'Getting time from Metadata {key}: {timestamp}')
     return (date, time)
 
