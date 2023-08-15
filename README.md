@@ -4,18 +4,18 @@ I wanted a way to automatically rename and organize photos that are auto-synced 
 
 ### Renaming
 Automatically renames photos as follows:<br>
-*Year-Month-Day.HourMinuteSecond.City/County.(Iter).Ext*
+*Year-Month-Day.HourMinuteSecond.City/County.Iter.Ext*
 
 **Some Examples:**<br>
 - 2023-07-25.143521.Paris.png<br>
   - The script will rename files with as much information as possible.<br>
-- 2023-07-25.143521.Paris(1).png<br>
+- 2023-07-25.143521.Paris.0001.png<br>
   - If more than one file would have the same name, a number will be added to the end of the file name in parenthesis. <br>
 - 2017-10-01.111108.Hawaii_County.png<br> 
   - The script will use the city name if the latitude and longitude GPS metatags line up with a city, otherwise it will use the county name. <br>
 - 2004-03-20.143659.jpg<br> 
   - If the script cannot find GPS metadata it simply won't use the city/county data. <br>
-- 2006-10-31(8).jpg<br>
+- 2006-10-31.0028.jpg<br>
   - If the script cannot find a timestamp it will attempt to parse one out of the file name. This could result in timestamps that do not include the Hour/Min/Sec. As long as the script can determine the Year/Month/Day it will rename the file. <br>
 <br>
 
@@ -30,7 +30,7 @@ Example:
     │   └── 2023-07-25.150302.Paris.png
     └── 2007/
         ├── 2007-12-24.080149.Mesa.jpg 
-        ├── 2007-12-24.080149.Mesa(1).jpg
+        ├── 2007-12-24.080149.Mesa.0001.jpg
         └── 2007-12-24.080150.Mesa.jpg
 </pre>
 <br>
