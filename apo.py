@@ -53,6 +53,8 @@ def get_metadata(file_path):
         if decoded == 'GPSInfo':
             gps_tag = tag
             logging.debug('GPS Metadata Detected')
+        elif not str(value).find('0000:00:00') == -1:
+            logging.debug('Empty Timestamp found')
         else:
             meta_dict[decoded] = value
 
