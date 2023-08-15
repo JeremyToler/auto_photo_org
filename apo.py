@@ -106,19 +106,22 @@ def get_time(meta_dict, filename):
     return (date, time)
 
 def time_from_metadata(key, meta_dict):
+    logging.debug(f'Getting datetime from Metadata {key}: {meta_dict[key]}')
     try:
-        timestamp = datetime.strptime(meta_dict[key], f'%Y:%m:%d %H:%M:%S')
+        timestamp = datetime.strptime(str(meta_dict[key]), f'%Y:%m:%d %H:%M:%S')
         date = timestamp.strftime(f'%Y-%m-%d')
         time = '.' + timestamp.strftime(f'%H%M%S')
+        logging.debug('Got date and time')
     except:
         try:
             timestamp = datetime.strptime(meta_dict[key], f'%Y:%m:%d')
             date = timestamp.strftime(f'%Y-%m-%d')
             time = ''
+            logging.debug('Got date, could not parse time')
         except:
             date = ''
             time = ''
-    logging.debug(f'Getting time from Metadata {key}: {timestamp}')
+            logging.debug(f'Failed to get date or time from {key}')
     return (date, time)
 
 def time_from_file_data(filename):
