@@ -132,7 +132,7 @@ def time_from_metadata(key, meta_dict):
 def time_from_file_data(filename):
     filepath = os.path.join(config.unsorted_path, filename)
     timestamp = datetime.fromtimestamp(os.path.getctime(filepath))
-    logging.debug(f'Gatting time from file creation date {timestamp}')
+    logging.debug(f'Getting time from file creation date {timestamp}')
     date = timestamp.strftime(f'%Y-%m-%d')
     time = '.' + timestamp.strftime(f'%H%M%S')
     return (date, time)
@@ -177,8 +177,8 @@ def sort_file(old, new):
         os.mkdir(new_path)
     while os.path.isfile(new_file):
         split_name = new_file.rsplit('.', 1)
-        newname = re.sub(r'\(.*\)', '', split_name[0])
-        new_file = f'{newname}({i:04d}).{split_name[1]}'
+        newname = re.sub(r'.*', '', split_name[0])
+        new_file = f'{newname}.{i:04d}.{split_name[1]}'
         i += 1
     else:
         os.rename(old_file, new_file)
