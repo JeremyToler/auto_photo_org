@@ -57,9 +57,11 @@ def get_metadata(file_path):
         else:
             meta_dict[decoded] = value
     if gps_tag:
+        logging.debug('---------------GPS Metadata---------------')
         for tag, value in exif[gps_tag].items():
             decoded = GPSTAGS.get(tag, tag)
             meta_dict[decoded] = value
+            logging.debug(f'TAG: {decoded} VALUE: {value}')
     return meta_dict  
 
 '''
@@ -67,8 +69,10 @@ Use geopy to interact with the Nominatim (OpenStreetMap) API
 At zoom level 10 Address returns City, County, State, Country
 '''
 def process_gps(meta_dict):
+    if (len(meta_dict['GPSLatitudeRef']) == 1):
+        return ''
     geolocator = Nominatim(user_agent=config.user_agent)
-    latitude = convert_gps(*meta_dict['GPSLatitude'], 
+    latitude = convert_gps(*meta_dict['GPSLatitude'],
                            meta_dict['GPSLatitudeRef'])
     longitude = convert_gps(*meta_dict['GPSLongitude'],
                             meta_dict['GPSLongitudeRef'])
@@ -83,7 +87,7 @@ def process_gps(meta_dict):
         return ''
     else:
         return '.' + re.sub(r'[^(A-Z)(a-z)(0-9)_]', '', city)
-
+    
 '''
 Pillow returns GPS coordinates as Degrees, Minutes, Seconds
 Nominatim expects GPS coordinates to be Decimal Degrees
@@ -205,7 +209,7 @@ def main():
         if not date: 
             logging.error(f'Cannot get timestamp from {filename}')
             continue
-        if 'GPSLatitude' in meta_dict:
+        if 'GPSLatitudeRef' in meta_dict:
             try:
                 city = process_gps(meta_dict)
             except:
