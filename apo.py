@@ -35,7 +35,7 @@ def get_files(unsorted_path):
         break 
     if not files:
         logging.info(f'{unsorted_path} is empty')
-    return files.sort()
+    return sorted(files)
 
 def get_metadata(file_path):
     meta_dict = {}
