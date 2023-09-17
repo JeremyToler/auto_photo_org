@@ -105,12 +105,12 @@ def get_time(meta_dict, filename):
         date, time = time_from_metadata('DateTimeOriginal', meta_dict)
     if not date and 'DateTime' in meta_dict:
         date, time = time_from_metadata('DateTime', meta_dict)
-    if not date:
-        date, time = time_from_name(filename)
     if not date and 'GPSDateStamp' in meta_dict:
         date, time = time_from_metadata('GPSDateStamp', meta_dict)
     if not date:
         date, time = time_from_file_data(filename)
+    if not date:
+        date, time = time_from_name(filename)
     return (date, time)
 
 def time_from_metadata(key, meta_dict):
