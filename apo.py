@@ -47,25 +47,30 @@ def get_metadata(files):
     logging.debug(f'Meta_Dict: \n {meta_dict}')
     return meta_dict  
 
+# Sometimes metadata has the GPS teg but the value is ''
 def get_gps(file):
     if 'Composite:GPSLatitude' in file.keys():
-        return(process_gps(file['Composite:GPSLatitude'], 
-                    file['Composite:GPSLongitude']))
+        if file['Composite:GPSLatitude']:
+            logging.debug('GPS Metadata using key Composite:GPSLatitude')
+            return(process_gps(file['Composite:GPSLatitude'], 
+                        file['Composite:GPSLongitude']))
     elif 'EXIF:GPSLatitude' in file.keys():
-        lat = convert_gps(file['EXIF:GPSLatitude'], 
-                          file['EXIF:GPSLatitudeRef'])
-        lon = convert_gps(file['EXIF:GPSLongitude'], 
-                          file['EXIF:GPSLongitudeRef'])
-        return(process_gps(lat, lon))
-    else:
-        logging.warning('NO GPS DATA')
-        return ''
+        if file['EXIF:GPSLatitude']:
+            logging.debug('GPS Metadata using key EXIF:GPSLatitude')
+            lat = convert_gps(file['EXIF:GPSLatitude'], 
+                            file['EXIF:GPSLatitudeRef'])
+            lon = convert_gps(file['EXIF:GPSLongitude'], 
+                            file['EXIF:GPSLongitudeRef'])
+            return(process_gps(lat, lon))
+    logging.warning('NO GPS DATA')
+    return ''
 
 '''
 Use geopy to interact with the Nominatim (OpenStreetMap) API
 At zoom level 10 Address returns City, County, State, Country
 '''
 def process_gps(lat, lon):
+    logging.debug(f'GPS Lat: {lat} Lon: {lon}')
     geolocator = Nominatim(user_agent=config.user_agent)
     location = geolocator.reverse(
         f'{lat}, {lon}',
@@ -76,6 +81,7 @@ def process_gps(lat, lon):
     logging.debug(f'GPS returned {location}')
     logging.debug(f'Extracted {city} from GPS Location.')
     return '.' + re.sub(r'[^(A-Z)(a-z)(0-9)_]', '', city)
+
     
 def convert_gps(pos, ref):
     if ref in ['W', 'S']:
