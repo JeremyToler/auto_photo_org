@@ -1,3 +1,5 @@
 geographiclib==2.0
 geopy==2.3.0
+PyExifTool==0.5.5
 slack-sdk==3.21.3
+
