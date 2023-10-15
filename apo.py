@@ -4,28 +4,39 @@ Renames and sorts photos, for more info check the readme
 https://github.com/JeremyToler/auto_photo_org
 '''
 
-#TODO Make installer
-#TODO Script to install exiftool, https://pypi.org/project/PyExifTool/
-#TODO Automate Noninatum Key generation
-
 import os
-import config
 import logging
 import re
 from exiftool import ExifToolHelper
 from datetime import datetime
 from geopy.geocoders import Nominatim
+import random
+import string
 
-if config.debug_mode:
+# Path to image files that will be renamed and sorted
+unsorted_path = '/home/jeremy/photos/unsorted/'
+
+# Path you want the images saved
+sorted_path = '/home/jeremy/photos/sorted/'
+
+# Set to true if you need more debug info.
+debug_mode = False
+
+# Path log file is saved to
+log_path = '/home/jeremy/logs/apo.log'
+
+uid = 'APO'.join(random.choices(string.ascii_letters + string.digits, k=10))
+
+if debug_mode:
     loglevel = logging.DEBUG
 else:
     loglevel = logging.INFO
 
 logging.basicConfig(
-    filename='apo.log',
-    filemode='w',
-    format='%(asctime)s :: %(name)s :: %(levelname)s :: %(message)s',
-    level=loglevel
+    filename = log_path,
+    filemode = 'w',
+    format = '%(asctime)s :: %(name)s :: %(levelname)s :: %(message)s',
+    level = loglevel
 )
 logging = logging.getLogger('APO')
 
@@ -36,6 +47,7 @@ def get_files(unsorted_path):
             files.append(os.path.join(dirpath, name))
     if not files:
         logging.info(f'{unsorted_path} is empty')
+        exit()
     files.sort()
     logging.debug(f'Found Files: \n {files}')
     return files
@@ -47,9 +59,9 @@ def get_metadata(files):
     logging.debug(f'Meta_Dict: \n {meta_dict}')
     return meta_dict  
 
-# Sometimes metadata has the GPS teg but the value is ''
 def get_gps(file):
     if 'Composite:GPSLatitude' in file.keys():
+        # Sometimes metadata has the GPS tag but the value is ''
         if file['Composite:GPSLatitude']:
             logging.debug('GPS Metadata using key Composite:GPSLatitude')
             return(process_gps(file['Composite:GPSLatitude'], 
@@ -71,7 +83,7 @@ At zoom level 10 Address returns City, County, State, Country
 '''
 def process_gps(lat, lon):
     logging.debug(f'GPS Lat: {lat} Lon: {lon}')
-    geolocator = Nominatim(user_agent=config.user_agent)
+    geolocator = Nominatim(user_agent=uid)
     location = geolocator.reverse(
         f'{lat}, {lon}',
         zoom = 10,
@@ -82,7 +94,6 @@ def process_gps(lat, lon):
     logging.debug(f'Extracted {city} from GPS Location.')
     return '.' + re.sub(r'[^(A-Z)(a-z)(0-9)_]', '', city)
 
-    
 def convert_gps(pos, ref):
     if ref in ['W', 'S']:
         return pos * -1
@@ -148,10 +159,10 @@ def time_from_name(filename):
 
 def sort_file(old_file, new_name):
     i = 0
-    new_path = os.path.join(config.sorted_path, new_name[:4])
+    new_path = os.path.join(sorted_path, new_name[:4])
     new_file = os.path.join(new_path, new_name)
-    if not os.path.exists(config.sorted_path):
-        os.mkdir(config.sorted_path)
+    if not os.path.exists(sorted_path):
+        os.mkdir(sorted_path)
     if not os.path.exists(new_path):
         os.mkdir(new_path)
     while True:
@@ -168,7 +179,7 @@ def sort_file(old_file, new_name):
             break
 
 def main():
-    files = get_files(config.unsorted_path)
+    files = get_files(unsorted_path)
     meta_dict = get_metadata(files)
     for file in meta_dict:
         logging.info(f'Starting {file["SourceFile"]}')
