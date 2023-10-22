@@ -1,5 +1,6 @@
 in_path: /path/to/unprocessed/files
 out_path: /path/to/processed/files
+wait_time: 3600
 user_agent: nominatum_user_agent_auto_generated
 alert_threshold: 10
 slack:

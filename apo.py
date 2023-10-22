@@ -13,18 +13,6 @@ import apo_logger as log
 
 config = yaml.load('config.yaml')
 
-def get_files(unsorted_path):
-    files = []
-    for dirpath, dirnames, filenames in os.walk(unsorted_path):
-        for name in filenames:
-            files.append(os.path.join(dirpath, name))
-    if not files:
-        log.debug.info(f'{unsorted_path} is empty')
-        log.info.info(f'{unsorted_path} is empty')
-        exit()
-    files.sort()
-    log.debug.debug(f'Found Files: \n {files}')
-    return files
 def get_metadata(files):
     meta_dict = {}
     with ExifToolHelper() as et:
@@ -135,10 +123,10 @@ def time_from_name(filename):
 
 def sort_file(old_file, new_name):
     i = 0
-    new_path = os.path.join(sorted_path, new_name[:4])
+    new_path = os.path.join(config.out_path, new_name[:4])
     new_file = os.path.join(new_path, new_name)
-    if not os.path.exists(sorted_path):
-        os.mkdir(sorted_path)
+    if not os.path.exists(config.out_path):
+        os.mkdir(config.out_path)
     if not os.path.exists(new_path):
         os.mkdir(new_path)
     while True:
@@ -155,8 +143,7 @@ def sort_file(old_file, new_name):
             log.info.info(f'{old_file} has been renamed {new_file}')
             break
 
-def main():
-    files = get_files(unsorted_path)
+def main(files):
     meta_dict = get_metadata(files)
     for file in meta_dict:
         log.debug.info(f'Starting {file["SourceFile"]}')
