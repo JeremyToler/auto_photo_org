@@ -6,6 +6,7 @@ https://github.com/JeremyToler/auto_photo_org
 '''
 import logging
 from datetime import datetime
+import os
 
 def setup_logger(name, log_file, level):
     format = logging.Formatter(
@@ -18,6 +19,22 @@ def setup_logger(name, log_file, level):
     logger.addHandler(handler)
     return logger
 
-timestamp = datetime.now().strftime('%Y-%m-%d_%H-%M')
+format = '%Y-%m-%d_%H-%M'
+timestamp = datetime.now().strftime(format)
 debug = setup_logger('APO_ALL', f'logs/debug/{timestamp}.log', logging.DEBUG)
 info = setup_logger('APO', f'logs/info/{timestamp}.log', logging.INFO)
+
+def get_files():
+    files = []
+    for dirpath, dirnames, filenames in os.walk('logs/info'):
+        for name in filenames:
+            files.append(os.path.join(dirpath, name))
+            files.sort(reverse=True)
+    return files
+
+def cleanup_logs(max_logs):
+    files = get_files()
+    while files > max_logs:
+        oldest = files.pop()
+        os.remove(f'logs/debug/{oldest}')
+        os.remove(f'logs/info/{oldest}')

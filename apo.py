@@ -5,13 +5,10 @@ https://github.com/JeremyToler/auto_photo_org
 '''
 import os
 import re
-import yaml
 from exiftool import ExifToolHelper
 from datetime import datetime
 from geopy.geocoders import Nominatim
 import apo_logger as log
-
-config = yaml.load('config.yaml')
 
 def get_metadata(files):
     meta_dict = {}
@@ -20,31 +17,39 @@ def get_metadata(files):
     log.debug.debug(f'Meta_Dict: \n {meta_dict}')
     return meta_dict  
 
-def get_gps(file):
+def get_gps(file, user_agent):
     if 'Composite:GPSLatitude' in file.keys():
         # Sometimes metadata has the GPS tag but the value is ''
         if file['Composite:GPSLatitude']:
             log.debug.debug('GPS Metadata using key Composite:GPSLatitude')
-            return(process_gps(file['Composite:GPSLatitude'], 
-                        file['Composite:GPSLongitude']))
+            return(process_gps(
+                file['Composite:GPSLatitude'],
+                file['Composite:GPSLongitude'],
+                user_agent
+                ))
     elif 'EXIF:GPSLatitude' in file.keys():
         if file['EXIF:GPSLatitude']:
             log.debug.debug('GPS Metadata using key EXIF:GPSLatitude')
-            lat = convert_gps(file['EXIF:GPSLatitude'], 
-                            file['EXIF:GPSLatitudeRef'])
-            lon = convert_gps(file['EXIF:GPSLongitude'], 
-                            file['EXIF:GPSLongitudeRef'])
-            return(process_gps(lat, lon))
-    log.debug.warning('NO GPS DATA')
+            lat = convert_gps(
+                file['EXIF:GPSLatitude'],
+                file['EXIF:GPSLatitudeRef']
+                )
+            lon = convert_gps(
+                file['EXIF:GPSLongitude'],
+                file['EXIF:GPSLongitudeRef']
+                )
+            return(process_gps(lat, lon, user_agent))
+    log.debug.info('NO GPS DATA')
+    log.info.info('NO GPS DATA')
     return ''
 
 '''
 Use geopy to interact with the Nominatim (OpenStreetMap) API
 At zoom level 10 Address returns City, County, State, Country
 '''
-def process_gps(lat, lon):
+def process_gps(lat, lon, user_agent):
     log.debug.debug(f'GPS Lat: {lat} Lon: {lon}')
-    geolocator = Nominatim(user_agent=uid)
+    geolocator = Nominatim(user_agent=user_agent)
     location = geolocator.reverse(
         f'{lat}, {lon}',
         zoom = 10,
@@ -62,22 +67,23 @@ def convert_gps(pos, ref):
         return pos
 
 def get_time(metadata):
-    meta_priority = ['EXIF:DateTimeOriginal', 
-                     'EXIF:CreateDate',
-                     'Composite:GPSDateTime',
-                     'Composite:SubSecCreateDate',
-                     'Composite:SubSecDateTimeOriginal',
-                     'QuickTime:MediaCreateDate',
-                     'QuickTime:TrackCreateDate',
-                     'EXIF:GPSDateStamp',
-                     'File:FileModifyDate',
-                     'File:FileInodeChangeDate']
+    meta_priority = [
+        'EXIF:DateTimeOriginal', 
+        'EXIF:CreateDate',
+        'Composite:GPSDateTime',
+        'Composite:SubSecCreateDate',
+        'Composite:SubSecDateTimeOriginal',
+        'QuickTime:MediaCreateDate',
+        'QuickTime:TrackCreateDate',
+        'EXIF:GPSDateStamp',
+        'File:FileModifyDate',
+        'File:FileInodeChangeDate'
+                     ]
     timestamp = ''
     for key in meta_priority:
         if key in metadata.keys():
             timestamp = time_from_metadata(key, metadata)
-            if timestamp:
-                break
+        if timestamp: break
     else:
         timestamp = time_from_name(metadata['File:FileName'])
     return timestamp
@@ -121,12 +127,12 @@ def time_from_name(filename):
         log.debug.debug(f'{stripped} is not in YYYMMDD format')
     return ('')
 
-def sort_file(old_file, new_name):
+def sort_file(old_file, new_name, out_path):
     i = 0
-    new_path = os.path.join(config.out_path, new_name[:4])
+    new_path = os.path.join(out_path, new_name[:4])
     new_file = os.path.join(new_path, new_name)
-    if not os.path.exists(config.out_path):
-        os.mkdir(config.out_path)
+    if not os.path.exists(out_path):
+        os.mkdir(out_path)
     if not os.path.exists(new_path):
         os.mkdir(new_path)
     while True:
@@ -143,7 +149,7 @@ def sort_file(old_file, new_name):
             log.info.info(f'{old_file} has been renamed {new_file}')
             break
 
-def main(files):
+def main(files, config):
     meta_dict = get_metadata(files)
     for file in meta_dict:
         log.debug.info(f'Starting {file["SourceFile"]}')
@@ -154,14 +160,18 @@ def main(files):
             log.info.error(f'Unable to get date. Skipping File')
             continue
         try:
-            city = get_gps(file)
+            city = get_gps(file, config['user_agent'])
         except:
             log.debug.exception(f'GPS Error. Skipping File to try again later')
             log.info.exception(f'GPS Error. Skipping File to try again later')
             continue
         ext = file['File:FileName'].rsplit('.', 1)[1]
         new_name = f'{timestamp}{city}.{ext}'
-        sort_file(file['SourceFile'], new_name)
+        sort_file(file['SourceFile'], new_name, config['out_path'])
+    #Threshold Check
+        #SLACK
+        #EMAIL
+    log.cleanup_logs(config['max_logs'])
 
 if __name__ == '__main__':
     main()
