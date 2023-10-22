@@ -3,42 +3,15 @@ Auto Photo Org - Jeremy Toler
 Renames and sorts photos, for more info check the readme
 https://github.com/JeremyToler/auto_photo_org
 '''
-
 import os
-import logging
 import re
+import yaml
 from exiftool import ExifToolHelper
 from datetime import datetime
 from geopy.geocoders import Nominatim
-import random
-import string
+import apo_logger as log
 
-# Path to image files that will be renamed and sorted
-unsorted_path = '/home/jeremy/photos/unsorted/'
-
-# Path you want the images saved
-sorted_path = '/home/jeremy/photos/sorted/'
-
-# Set to true if you need more debug info.
-debug_mode = False
-
-# Path log file is saved to
-log_path = '/home/jeremy/logs/apo.log'
-
-uid = 'APO'.join(random.choices(string.ascii_letters + string.digits, k=10))
-
-if debug_mode:
-    loglevel = logging.DEBUG
-else:
-    loglevel = logging.INFO
-
-logging.basicConfig(
-    filename = log_path,
-    filemode = 'w',
-    format = '%(asctime)s :: %(name)s :: %(levelname)s :: %(message)s',
-    level = loglevel
-)
-logging = logging.getLogger('APO')
+config = yaml.load('config.yaml')
 
 def get_files(unsorted_path):
     files = []
@@ -46,35 +19,35 @@ def get_files(unsorted_path):
         for name in filenames:
             files.append(os.path.join(dirpath, name))
     if not files:
-        logging.info(f'{unsorted_path} is empty')
+        log.debug.info(f'{unsorted_path} is empty')
+        log.info.info(f'{unsorted_path} is empty')
         exit()
     files.sort()
-    logging.debug(f'Found Files: \n {files}')
+    log.debug.debug(f'Found Files: \n {files}')
     return files
-
 def get_metadata(files):
     meta_dict = {}
     with ExifToolHelper() as et:
         meta_dict = et.get_metadata(files)
-    logging.debug(f'Meta_Dict: \n {meta_dict}')
+    log.debug.debug(f'Meta_Dict: \n {meta_dict}')
     return meta_dict  
 
 def get_gps(file):
     if 'Composite:GPSLatitude' in file.keys():
         # Sometimes metadata has the GPS tag but the value is ''
         if file['Composite:GPSLatitude']:
-            logging.debug('GPS Metadata using key Composite:GPSLatitude')
+            log.debug.debug('GPS Metadata using key Composite:GPSLatitude')
             return(process_gps(file['Composite:GPSLatitude'], 
                         file['Composite:GPSLongitude']))
     elif 'EXIF:GPSLatitude' in file.keys():
         if file['EXIF:GPSLatitude']:
-            logging.debug('GPS Metadata using key EXIF:GPSLatitude')
+            log.debug.debug('GPS Metadata using key EXIF:GPSLatitude')
             lat = convert_gps(file['EXIF:GPSLatitude'], 
                             file['EXIF:GPSLatitudeRef'])
             lon = convert_gps(file['EXIF:GPSLongitude'], 
                             file['EXIF:GPSLongitudeRef'])
             return(process_gps(lat, lon))
-    logging.warning('NO GPS DATA')
+    log.debug.warning('NO GPS DATA')
     return ''
 
 '''
@@ -82,7 +55,7 @@ Use geopy to interact with the Nominatim (OpenStreetMap) API
 At zoom level 10 Address returns City, County, State, Country
 '''
 def process_gps(lat, lon):
-    logging.debug(f'GPS Lat: {lat} Lon: {lon}')
+    log.debug.debug(f'GPS Lat: {lat} Lon: {lon}')
     geolocator = Nominatim(user_agent=uid)
     location = geolocator.reverse(
         f'{lat}, {lon}',
@@ -90,8 +63,8 @@ def process_gps(lat, lon):
         language='en-us'
         )
     city = location.address.split(', ', 1)[0].replace(' ', '_')
-    logging.debug(f'GPS returned {location}')
-    logging.debug(f'Extracted {city} from GPS Location.')
+    log.debug.debug(f'GPS returned {location}')
+    log.debug.debug(f'Extracted {city} from GPS Location.')
     return '.' + re.sub(r'[^(A-Z)(a-z)(0-9)_]', '', city)
 
 def convert_gps(pos, ref):
@@ -122,18 +95,19 @@ def get_time(metadata):
     return timestamp
 
 def time_from_metadata(key, metadata):
-    logging.debug(f'Getting datetime from Metadata {key}: {metadata[key]}')
+    log.debug.debug(f'Getting datetime from Metadata {key}: {metadata[key]}')
     try:
         dt = datetime.strptime(str(metadata[key])[:19], f'%Y:%m:%d %H:%M:%S')
         timestamp = dt.strftime(f'%Y-%m-%d.%H%M%S')
-        logging.debug(f'Got full timestamp: {timestamp}')
+        log.debug.debug(f'Got full timestamp: {timestamp}')
     except:
         try:
             dt = datetime.strptime(str(metadata[key])[:10], f'%Y:%m:%d')
             timestamp = dt.strftime(f'%Y-%m-%d')
-            logging.debug(f'Got partial timestamp: {timestamp}')
+            log.debug.debug(f'Got partial timestamp: {timestamp}')
         except:
-            logging.info(f'Failed to get timestamp from {key}')
+            log.debug.info(f'Failed to get timestamp from {key}')
+            log.info.info(f'Failed to get timestamp from {key}')
             timestamp = ''
     return (timestamp)
 
@@ -144,17 +118,19 @@ characters from the strings will put them all in the same order and
 slicing the first 8 get rid of any none date numbers.
 '''
 def time_from_name(filename):
-    logging.debug(f'Getting time from Filename: {filename}')
+    log.debug.debug(f'Getting time from Filename: {filename}')
     stripped = re.sub(r'\D', '', filename.rsplit('.', 1)[0])[:8]
     if not stripped.startswith('20'):
-        logging.warning(f'Could not extract time from {filename}')
-        logging.debug(f'{stripped} does not start with 20')
+        log.debug.warning(f'Could not extract time from {filename}')
+        log.info.warning(f'Could not extract time from {filename}')
+        log.debug.debug(f'{stripped} does not start with 20')
     try:
         dt = datetime.strptime(stripped[8], '%Y%m%d')
         return (dt.strftime(f'%Y-%m-%d'))
     except:
-        logging.warning(f'Could not extract time from {filename}')
-        logging.debug(f'{stripped} is not in YYYMMDD format')
+        log.debug.warning(f'Could not extract time from {filename}')
+        log.info.warning(f'Could not extract time from {filename}')
+        log.debug.debug(f'{stripped} is not in YYYMMDD format')
     return ('')
 
 def sort_file(old_file, new_name):
@@ -175,22 +151,26 @@ def sort_file(old_file, new_name):
         i += 1
         if not os.path.isfile(new_file):
             os.rename(old_file, new_file)
-            logging.info(f'{old_file} has been renamed {new_file}')
+            log.debug.info(f'{old_file} has been renamed {new_file}')
+            log.info.info(f'{old_file} has been renamed {new_file}')
             break
 
 def main():
     files = get_files(unsorted_path)
     meta_dict = get_metadata(files)
     for file in meta_dict:
-        logging.info(f'Starting {file["SourceFile"]}')
+        log.debug.info(f'Starting {file["SourceFile"]}')
+        log.info.info(f'Starting {file["SourceFile"]}')
         timestamp = get_time(file)
         if not timestamp: 
-            logging.error(f'Unable to get date. Skipping File')
+            log.debug.error(f'Unable to get date. Skipping File')
+            log.info.error(f'Unable to get date. Skipping File')
             continue
         try:
             city = get_gps(file)
         except:
-            logging.exception(f'GPS Error. Skipping File to try again later')
+            log.debug.exception(f'GPS Error. Skipping File to try again later')
+            log.info.exception(f'GPS Error. Skipping File to try again later')
             continue
         ext = file['File:FileName'].rsplit('.', 1)[1]
         new_name = f'{timestamp}{city}.{ext}'

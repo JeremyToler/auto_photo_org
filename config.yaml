@@ -1,0 +1,10 @@
+in_path: /path/to/unprocessed/files
+out_path: /path/to/processed/files
+user_agent: nominatum_user_agent_auto_generated
+alert_threshold: 10
+slack:
+  use_slack: false
+  oauth: users_oauth_token
+  channel: slack_channel_for_alerts
+email:
+  use_email: false
