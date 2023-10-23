@@ -8,28 +8,28 @@ import re
 from exiftool import ExifToolHelper
 from datetime import datetime
 from geopy.geocoders import Nominatim
-import apo_logger as log
+import apo_logger
 
-def get_metadata(files):
+def get_metadata(files, log):
     meta_dict = {}
     with ExifToolHelper() as et:
         meta_dict = et.get_metadata(files)
-    log.debug.debug(f'Meta_Dict: \n {meta_dict}')
+    log.debug(f'Meta_Dict: \n {meta_dict}')
     return meta_dict  
 
-def get_gps(file, user_agent):
+def get_gps(file, user_agent, log):
     if 'Composite:GPSLatitude' in file.keys():
         # Sometimes metadata has the GPS tag but the value is ''
         if file['Composite:GPSLatitude']:
-            log.debug.debug('GPS Metadata using key Composite:GPSLatitude')
+            log.debug('GPS Metadata using key Composite:GPSLatitude')
             return(process_gps(
                 file['Composite:GPSLatitude'],
                 file['Composite:GPSLongitude'],
-                user_agent
+                user_agent, log
                 ))
     elif 'EXIF:GPSLatitude' in file.keys():
         if file['EXIF:GPSLatitude']:
-            log.debug.debug('GPS Metadata using key EXIF:GPSLatitude')
+            log.debug('GPS Metadata using key EXIF:GPSLatitude')
             lat = convert_gps(
                 file['EXIF:GPSLatitude'],
                 file['EXIF:GPSLatitudeRef']
@@ -38,17 +38,16 @@ def get_gps(file, user_agent):
                 file['EXIF:GPSLongitude'],
                 file['EXIF:GPSLongitudeRef']
                 )
-            return(process_gps(lat, lon, user_agent))
-    log.debug.info('NO GPS DATA')
-    log.info.info('NO GPS DATA')
+            return(process_gps(lat, lon, user_agent), log)
+    log.info('NO GPS DATA')
     return ''
 
 '''
 Use geopy to interact with the Nominatim (OpenStreetMap) API
 At zoom level 10 Address returns City, County, State, Country
 '''
-def process_gps(lat, lon, user_agent):
-    log.debug.debug(f'GPS Lat: {lat} Lon: {lon}')
+def process_gps(lat, lon, user_agent, log):
+    log.debug(f'GPS Lat: {lat} Lon: {lon}')
     geolocator = Nominatim(user_agent=user_agent)
     location = geolocator.reverse(
         f'{lat}, {lon}',
@@ -56,8 +55,8 @@ def process_gps(lat, lon, user_agent):
         language='en-us'
         )
     city = location.address.split(', ', 1)[0].replace(' ', '_')
-    log.debug.debug(f'GPS returned {location}')
-    log.debug.debug(f'Extracted {city} from GPS Location.')
+    log.debug(f'GPS returned {location}')
+    log.debug(f'Extracted {city} from GPS Location.')
     return '.' + re.sub(r'[^(A-Z)(a-z)(0-9)_]', '', city)
 
 def convert_gps(pos, ref):
@@ -66,7 +65,7 @@ def convert_gps(pos, ref):
     else:
         return pos
 
-def get_time(metadata):
+def get_time(metadata, log):
     meta_priority = [
         'EXIF:DateTimeOriginal', 
         'EXIF:CreateDate',
@@ -82,26 +81,25 @@ def get_time(metadata):
     timestamp = ''
     for key in meta_priority:
         if key in metadata.keys():
-            timestamp = time_from_metadata(key, metadata)
+            timestamp = time_from_metadata(key, metadata, log)
         if timestamp: break
     else:
-        timestamp = time_from_name(metadata['File:FileName'])
+        timestamp = time_from_name(metadata['File:FileName'], log)
     return timestamp
 
-def time_from_metadata(key, metadata):
-    log.debug.debug(f'Getting datetime from Metadata {key}: {metadata[key]}')
+def time_from_metadata(key, metadata, log):
+    log.debug(f'Getting datetime from Metadata {key}: {metadata[key]}')
     try:
         dt = datetime.strptime(str(metadata[key])[:19], f'%Y:%m:%d %H:%M:%S')
         timestamp = dt.strftime(f'%Y-%m-%d.%H%M%S')
-        log.debug.debug(f'Got full timestamp: {timestamp}')
+        log.debug(f'Got full timestamp: {timestamp}')
     except:
         try:
             dt = datetime.strptime(str(metadata[key])[:10], f'%Y:%m:%d')
             timestamp = dt.strftime(f'%Y-%m-%d')
-            log.debug.debug(f'Got partial timestamp: {timestamp}')
+            log.debug(f'Got partial timestamp: {timestamp}')
         except:
-            log.debug.info(f'Failed to get timestamp from {key}')
-            log.info.info(f'Failed to get timestamp from {key}')
+            log.info(f'Failed to get timestamp from {key}')
             timestamp = ''
     return (timestamp)
 
@@ -111,23 +109,21 @@ in order YYYY MM DD along with other info. Removing all non digit
 characters from the strings will put them all in the same order and
 slicing the first 8 get rid of any none date numbers.
 '''
-def time_from_name(filename):
-    log.debug.debug(f'Getting time from Filename: {filename}')
+def time_from_name(filename, log):
+    log.debug(f'Getting time from Filename: {filename}')
     stripped = re.sub(r'\D', '', filename.rsplit('.', 1)[0])[:8]
     if not stripped.startswith('20'):
-        log.debug.warning(f'Could not extract time from {filename}')
-        log.info.warning(f'Could not extract time from {filename}')
-        log.debug.debug(f'{stripped} does not start with 20')
+        log.warning(f'Could not extract time from {filename}')
+        log.debug(f'{stripped} does not start with 20')
     try:
         dt = datetime.strptime(stripped[8], '%Y%m%d')
         return (dt.strftime(f'%Y-%m-%d'))
     except:
-        log.debug.warning(f'Could not extract time from {filename}')
-        log.info.warning(f'Could not extract time from {filename}')
-        log.debug.debug(f'{stripped} is not in YYYMMDD format')
+        log.warning(f'Could not extract time from {filename}')
+        log.debug(f'{stripped} is not in YYYMMDD format')
     return ('')
 
-def sort_file(old_file, new_name, out_path):
+def sort_file(old_file, new_name, out_path, log):
     i = 0
     new_path = os.path.join(out_path, new_name[:4])
     new_file = os.path.join(new_path, new_name)
@@ -145,33 +141,31 @@ def sort_file(old_file, new_name, out_path):
         i += 1
         if not os.path.isfile(new_file):
             os.rename(old_file, new_file)
-            log.debug.info(f'{old_file} has been renamed {new_file}')
-            log.info.info(f'{old_file} has been renamed {new_file}')
+            log.info(f'{old_file} has been renamed {new_file}')
             break
 
 def main(files, config):
-    meta_dict = get_metadata(files)
+    log = apo_logger.new_log()
+    log.debug(f'Found Files: \n {files}')
+    meta_dict = get_metadata(files, log)
     for file in meta_dict:
-        log.debug.info(f'Starting {file["SourceFile"]}')
-        log.info.info(f'Starting {file["SourceFile"]}')
-        timestamp = get_time(file)
+        log.info(f'Starting {file["SourceFile"]}')
+        timestamp = get_time(file, log)
         if not timestamp: 
-            log.debug.error(f'Unable to get date. Skipping File')
-            log.info.error(f'Unable to get date. Skipping File')
+            log.error(f'Unable to get date. Skipping File')
             continue
         try:
-            city = get_gps(file, config['user_agent'])
+            city = get_gps(file, config['user_agent'], log)
         except:
-            log.debug.exception(f'GPS Error. Skipping File to try again later')
-            log.info.exception(f'GPS Error. Skipping File to try again later')
+            log.exception(f'GPS Error. Skipping File to try again later')
             continue
         ext = file['File:FileName'].rsplit('.', 1)[1]
         new_name = f'{timestamp}{city}.{ext}'
-        sort_file(file['SourceFile'], new_name, config['out_path'])
+        sort_file(file['SourceFile'], new_name, config['out_path'], log)
     #Threshold Check
         #SLACK
         #EMAIL
-    log.cleanup_logs(config['max_logs'])
+    apo_logger.cleanup_logs(config['max_logs'], log)
 
 if __name__ == '__main__':
     main()

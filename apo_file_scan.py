@@ -21,8 +21,10 @@ def main():
     with open('config.yaml', 'r') as file:
         config = yaml.safe_load(file)
     while True:
+        print('Looping')
         files = get_files(config['in_path'])
         if files:
+            print('Files Found')
             apo.main(files, config)
         time.sleep(config['wait_time'])
 

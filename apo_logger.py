@@ -19,22 +19,24 @@ def setup_logger(name, log_file, level):
     logger.addHandler(handler)
     return logger
 
-format = '%Y-%m-%d_%H-%M'
-timestamp = datetime.now().strftime(format)
-debug = setup_logger('APO_ALL', f'logs/debug/{timestamp}.log', logging.DEBUG)
-info = setup_logger('APO', f'logs/info/{timestamp}.log', logging.INFO)
+def new_log():
+    format = '%Y-%m-%d_%H-%M'
+    timestamp = datetime.now().strftime(format)
+    log = setup_logger('APO', f'logs/{timestamp}.log', logging.DEBUG)
+    return(log)
 
 def get_files():
     files = []
-    for dirpath, dirnames, filenames in os.walk('logs/info'):
+    for dirpath, dirnames, filenames in os.walk('logs/'):
         for name in filenames:
-            files.append(os.path.join(dirpath, name))
+            files.append(os.path.join(name))
             files.sort(reverse=True)
     return files
 
-def cleanup_logs(max_logs):
+def cleanup_logs(max_logs, log):
     files = get_files()
-    while files > max_logs:
+    while len(files) > max_logs:
         oldest = files.pop()
-        os.remove(f'logs/debug/{oldest}')
-        os.remove(f'logs/info/{oldest}')
+        log.debug(f'Removing "logs/{oldest}"')
+        os.remove(f'logs/{oldest}')
+
