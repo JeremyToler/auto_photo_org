@@ -9,6 +9,8 @@ from exiftool import ExifToolHelper
 from datetime import datetime
 from geopy.geocoders import Nominatim
 import apo_logger
+import apo_slack
+import apo_email
 
 def get_metadata(files, log):
     meta_dict = {}
@@ -144,7 +146,22 @@ def sort_file(old_file, new_name, out_path, log):
             log.info(f'{old_file} has been renamed {new_file}')
             break
 
-def main(files, config):
+def alerts(file_count, config, log):
+    if config['slack']['use_slack'] == 'true':
+        apo_slack.send_alert(
+            file_count,
+            config['slack']['oauth'],
+            config['slack']['channel'],
+            log
+            )
+    if config['email']['use_email'] == 'true':
+        apo_email.send_alert(
+            file_count,
+            config['email']['address'],
+            log
+        )
+
+def main(files, config, alert):
     log = apo_logger.new_log()
     log.debug(f'Found Files: \n {files}')
     meta_dict = get_metadata(files, log)
@@ -162,9 +179,8 @@ def main(files, config):
         ext = file['File:FileName'].rsplit('.', 1)[1]
         new_name = f'{timestamp}{city}.{ext}'
         sort_file(file['SourceFile'], new_name, config['out_path'], log)
-    #Threshold Check
-        #SLACK
-        #EMAIL
+    if alert:
+        alerts(len(files), config, log)
     apo_logger.cleanup_logs(config['max_logs'], log)
 
 if __name__ == '__main__':

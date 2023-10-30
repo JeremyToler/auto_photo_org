@@ -1,12 +1,13 @@
-in_path: /path/to/unprocessed/files/
-out_path: /path/to/processed/files/
-wait_time: 3600
-user_agent: nominatum_user_agent_auto_generated
 alert_threshold: 10
-max_logs: 2
-slack:
-  use_slack: false
-  oauth: users_oauth_token
-  channel: slack_channel_for_alerts
 email:
   use_email: false
+  address: example@example.com
+in_path: /mnt/d/test/unsorted
+max_logs: 100
+out_path: /mnt/d/test/sorted
+slack:
+  channel: slack_channel_for_alerts
+  oauth: users_oauth_token
+  use_slack: false
+user_agent: APO-yyJnjJkGeL
+wait_time: 80

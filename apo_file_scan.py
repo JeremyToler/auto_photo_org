@@ -18,14 +18,24 @@ def get_files(in_path):
     return files
 
 def main():
+    last_file_count = 0
     with open('config.yaml', 'r') as file:
         config = yaml.safe_load(file)
+
     while True:
-        print('Looping')
+        alert = False
         files = get_files(config['in_path'])
-        if files:
-            print('Files Found')
-            apo.main(files, config)
+        if not files:
+            last_file_count = 0
+            continue
+        file_count = len(files)
+        if all (
+            file_count == last_file_count, 
+            file_count >= config['alert_threshold']
+            ):
+            alert = True
+        apo.main(files, config, alert)
+        last_file_count = file_count
         time.sleep(config['wait_time'])
 
 if __name__ == '__main__':
