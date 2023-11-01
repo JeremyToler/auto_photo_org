@@ -2,9 +2,7 @@ alert_threshold: 10
 email:
   use_email: false
   address: example@example.com
-in_path: /mnt/d/test/unsorted
 max_logs: 100
-out_path: /mnt/d/test/sorted
 slack:
   channel: slack_channel_for_alerts
   oauth: users_oauth_token

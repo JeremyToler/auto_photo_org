@@ -9,9 +9,9 @@ import yaml
 import time
 import apo
 
-def get_files(in_path):
+def get_files():
     files = []
-    for dirpath, dirnames, filenames in os.walk(in_path):
+    for dirpath, dirnames, filenames in os.walk('/unsorted'):
         for name in filenames:
             files.append(os.path.join(dirpath, name))
     files.sort()
@@ -24,7 +24,7 @@ def main():
 
     while True:
         alert = False
-        files = get_files(config['in_path'])
+        files = get_files()
         if not files:
             last_file_count = 0
             continue

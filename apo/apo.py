@@ -125,12 +125,12 @@ def time_from_name(filename, log):
         log.debug(f'{stripped} is not in YYYMMDD format')
     return ('')
 
-def sort_file(old_file, new_name, out_path, log):
+def sort_file(old_file, new_name, log):
     i = 0
-    new_path = os.path.join(out_path, new_name[:4])
+    new_path = os.path.join('/sorted/', new_name[:4])
     new_file = os.path.join(new_path, new_name)
-    if not os.path.exists(out_path):
-        os.mkdir(out_path)
+    if not os.path.exists('/sorted/'):
+        os.mkdir('/sorted/')
     if not os.path.exists(new_path):
         os.mkdir(new_path)
     while True:
@@ -178,7 +178,7 @@ def main(files, config, alert):
             continue
         ext = file['File:FileName'].rsplit('.', 1)[1]
         new_name = f'{timestamp}{city}.{ext}'
-        sort_file(file['SourceFile'], new_name, config['out_path'], log)
+        sort_file(file['SourceFile'], new_name, log)
     if alert:
         alerts(len(files), config, log)
     apo_logger.cleanup_logs(config['max_logs'], log)
