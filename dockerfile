@@ -1,20 +1,19 @@
 FROM python:3.11-alpine
 # Install ExifTool
 RUN apk add --no-cache perl make
-RUN wget https://exiftool.org/Image-ExifTool-12.69.tar.gz \
-	&& tar -zxvf Image-ExifTool-12.69.tar.gz.tar.gz \
-	&& cd Image-ExifTool-12.69.tar.gz \
+COPY Image-ExifTool-12.69.tar.gz .
+RUN tar -zxvf Image-ExifTool-12.69.tar.gz \
+	&& cd Image-ExifTool-12.69 \
 	&& perl Makefile.PL \
 	&& make test \
 	&& make install \
 	&& cd .. \
-	&& rm -rf Image-ExifTool-12.69.tar.gz\
-    && mkdir /apo
+	&& rm -rf Image-ExifTool-12.69.tar.gz
 # Setup APO
 VOLUME unsorted sorted
 COPY apo /apo
 WORKDIR /apo
-RUN pip install -r requierments.txt
+RUN pip install -r requirements.txt
 # ENV ALERT_THRESHOLD \
 #     MAX_LOGS \
 #     WAIT_TIME \
