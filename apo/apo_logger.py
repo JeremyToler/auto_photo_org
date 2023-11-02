@@ -22,6 +22,8 @@ def setup_logger(name, log_file, level):
 def new_log():
     format = '%Y-%m-%d_%H-%M'
     timestamp = datetime.now().strftime(format)
+    if not os.path.exists('logs'):
+        os.mkdir('logs')
     log = setup_logger('APO', f'logs/{timestamp}.log', logging.DEBUG)
     return(log)
 
