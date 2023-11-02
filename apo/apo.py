@@ -4,6 +4,7 @@ Renames and sorts photos, for more info check the readme
 https://github.com/JeremyToler/auto_photo_org
 '''
 import os
+import shutil
 import re
 from exiftool import ExifToolHelper
 from datetime import datetime
@@ -142,7 +143,8 @@ def sort_file(old_file, new_name, log):
             new_file = f'{split_name[0]}.{i:04d}.{split_name[1]}'
         i += 1
         if not os.path.isfile(new_file):
-            os.rename(old_file, new_file)
+            shutil.copy(old_file, new_file)
+            os.remove(old_file)
             log.info(f'{old_file} has been renamed {new_file}')
             break
 
