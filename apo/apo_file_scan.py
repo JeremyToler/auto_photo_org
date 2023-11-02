@@ -29,8 +29,8 @@ def main():
             last_file_count = 0
             continue
         file_count = len(files)
-        if all (
-            file_count == last_file_count, 
+        if (
+            file_count == last_file_count and
             file_count >= config['alert_threshold']
             ):
             alert = True
