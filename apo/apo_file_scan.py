@@ -8,6 +8,7 @@ import os
 import yaml
 import time
 import apo
+import apo_setup
 
 def get_files():
     files = []
@@ -18,6 +19,7 @@ def get_files():
     return files
 
 def main():
+    apo_setup.setup()
     last_file_count = 0
     with open('config.yaml', 'r') as file:
         config = yaml.safe_load(file)
