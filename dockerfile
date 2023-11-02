@@ -1,4 +1,4 @@
-FROM python:3.11-alpine
+FROM python:3.12-alpine
 # Install ExifTool
 RUN apk add --no-cache perl make
 COPY Image-ExifTool-12.69.tar.gz .
