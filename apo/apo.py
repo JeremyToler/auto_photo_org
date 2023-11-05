@@ -171,14 +171,18 @@ def main(files, config, alert):
         log.info(f'Starting {file["SourceFile"]}')
         timestamp = get_time(file, log)
         if not timestamp: 
-            log.error(f'Unable to get date. Skipping File')
+            log.error('Unable to get date. Skipping File')
             continue
         try:
             city = get_gps(file, config['user_agent'], log)
         except:
-            log.exception(f'GPS Error. Skipping File to try again later')
+            log.exception('GPS Error. Skipping File to try again later')
             continue
-        ext = file['File:FileName'].rsplit('.', 1)[1]
+        try:
+            ext = file['File:FileName'].rsplit('.', 1)[1]
+        except:
+            log.exception(f'File {file["File:FileName"]} has no extension')
+            continue
         new_name = f'{timestamp}{city}.{ext}'
         sort_file(file['SourceFile'], new_name, log)
     if alert:
