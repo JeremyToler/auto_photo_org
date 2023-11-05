@@ -12,7 +12,7 @@ import apo_setup
 
 def get_files():
     files = []
-    for dirpath, dirnames, filenames in os.walk('/unsorted'):
+    for dirpath, dirnames, filenames in os.walk('/data/unsorted'):
         for name in filenames:
             files.append(os.path.join(dirpath, name))
     files.sort()

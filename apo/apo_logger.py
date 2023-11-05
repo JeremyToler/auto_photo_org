@@ -22,14 +22,14 @@ def setup_logger(name, log_file, level):
 def new_log():
     format = '%Y-%m-%d_%H-%M'
     timestamp = datetime.now().strftime(format)
-    if not os.path.exists('logs'):
-        os.mkdir('logs')
-    log = setup_logger('APO', f'logs/{timestamp}.log', logging.DEBUG)
+    if not os.path.exists('/data/logs'):
+        os.mkdir('/data/logs')
+    log = setup_logger('APO', f'/data/logs/{timestamp}.log', logging.DEBUG)
     return(log)
 
 def get_files():
     files = []
-    for dirpath, dirnames, filenames in os.walk('logs/'):
+    for dirpath, dirnames, filenames in os.walk('/data/logs/'):
         for name in filenames:
             files.append(os.path.join(name))
             files.sort(reverse=True)
@@ -39,6 +39,6 @@ def cleanup_logs(max_logs, log):
     files = get_files()
     while len(files) > max_logs:
         oldest = files.pop()
-        log.debug(f'Removing "logs/{oldest}"')
-        os.remove(f'logs/{oldest}')
+        log.debug(f'Removing "/data/logs/{oldest}"')
+        os.remove(f'/data/logs/{oldest}')
 
