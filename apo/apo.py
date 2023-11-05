@@ -91,7 +91,7 @@ def get_time(metadata, log):
     return timestamp
 
 def verify_time(timestamp):
-    if timestamp > datetime.now():
+    if datetime.strptime(timestamp[:10], f'%Y-%m-%d') > datetime.now():
         return('')
     else:
         return(timestamp)
