@@ -171,6 +171,7 @@ def alerts(file_count, config, log):
 
 def main(files, config, alert):
     log = apo_logger.new_log()
+    log.debug(f'Config: \n {config}')
     log.debug(f'Found Files: \n {files}')
     meta_dict = get_metadata(files, log)
     for file in meta_dict:
