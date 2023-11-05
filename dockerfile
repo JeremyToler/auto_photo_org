@@ -13,7 +13,7 @@ RUN tar -zxvf Image-ExifTool-12.69.tar.gz \
 	&& rm -rf Image-ExifTool-12.69.tar.gz
 
 # Setup APO
-VOLUME unsorted sorted
+VOLUME data/unsorted data/sorted data/logs
 COPY apo /apo
 WORKDIR /apo
 RUN pip install -r requirements.txt
