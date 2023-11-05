@@ -8,9 +8,9 @@ def get_bool(env_name):
     t = ('true', '1', 't', 'y', 'yes', 'on')
     f = ('false', '0', 'f', 'n', 'no', 'off')
     if env_value.lower() in f:
-        return False
+        return 'false'
     elif env_value.lower() in t:
-        return True
+        return 'true'
     else:
         raise ValueError(f'{env_value} is not a valid value for {env_name}')
 
