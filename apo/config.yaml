@@ -1,7 +1,4 @@
 alert_threshold: 10
-email:
-  use_email: false
-  address: example@example.com
 max_logs: 100
 slack:
   channel: slack_channel_for_alerts

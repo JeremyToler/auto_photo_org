@@ -11,7 +11,6 @@ from datetime import datetime
 from geopy.geocoders import Nominatim
 import apo_logger
 import apo_slack
-import apo_email
 
 def get_metadata(files, log):
     meta_dict = {}
@@ -162,12 +161,6 @@ def alerts(file_count, config, log):
             config['slack']['channel'],
             log
             )
-    if config['email']['use_email'] == 'true':
-        apo_email.send_alert(
-            file_count,
-            config['email']['address'],
-            log
-        )
 
 def main(files, config, alert):
     log = apo_logger.new_log()

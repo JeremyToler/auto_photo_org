@@ -23,8 +23,6 @@ def setup():
     config['alert_threshold'] = int(environ.get('ALERT_THRESHOLD', 10))
     config['max_logs'] = int(environ.get('MAX_LOGS', 100))
     config['wait_time'] = int(environ.get('WAIT_TIME', 86400))
-    config['email']['use_email'] = get_bool('USE_EMAIL')
-    config['email']['address'] = environ.get('EMAIL_ADDRESS')
     config['slack']['use_slack'] = get_bool('USE_SLACK')
     config['slack']['oauth'] = environ.get('SLACK_OAUTH')
     config['slack']['channel'] = environ.get('SLACK_CHANNEL')
