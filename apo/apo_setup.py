@@ -4,7 +4,7 @@ import yaml
 from os import environ
 
 def get_bool(env_name):
-    env_value = str(environ.get('USE_EMAIL', 'false'))
+    env_value = str(environ.get(f'{env_name}', 'false'))
     t = ('true', '1', 't', 'y', 'yes', 'on')
     f = ('false', '0', 'f', 'n', 'no', 'off')
     if env_value.lower() in f:
@@ -23,9 +23,9 @@ def setup():
     config['alert_threshold'] = int(environ.get('ALERT_THRESHOLD', 10))
     config['max_logs'] = int(environ.get('MAX_LOGS', 100))
     config['wait_time'] = int(environ.get('WAIT_TIME', 86400))
-    config['email']['use_email'] = environ.get('USE_EMAIL', False)
+    config['email']['use_email'] = get_bool('USE_EMAIL')
     config['email']['address'] = environ.get('EMAIL_ADDRESS')
-    config['slack']['use_slack'] = environ.get('USE_SLACK', False)
+    config['slack']['use_slack'] = get_bool('USE_SLACK')
     config['slack']['oauth'] = environ.get('SLACK_OAUTH')
     config['slack']['channel'] = environ.get('SLACK_CHANNEL')
 
