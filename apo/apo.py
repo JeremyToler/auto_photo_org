@@ -84,11 +84,17 @@ def get_time(metadata, log):
     timestamp = ''
     for key in meta_priority:
         if key in metadata.keys():
-            timestamp = time_from_metadata(key, metadata, log)
+            timestamp = verify_time(time_from_metadata(key, metadata, log))
         if timestamp: break
     else:
-        timestamp = time_from_name(metadata['File:FileName'], log)
+        timestamp = verify_time(time_from_name(metadata['File:FileName'], log))
     return timestamp
+
+def verify_time(timestamp):
+    if timestamp > datetime.now():
+        return('')
+    else:
+        return(timestamp)
 
 def time_from_metadata(key, metadata, log):
     log.debug(f'Getting datetime from Metadata {key}: {metadata[key]}')
@@ -128,10 +134,10 @@ def time_from_name(filename, log):
 
 def sort_file(old_file, new_name, log):
     i = 0
-    new_path = os.path.join('/sorted/', new_name[:4])
+    new_path = os.path.join('/data/sorted/', new_name[:4])
     new_file = os.path.join(new_path, new_name)
-    if not os.path.exists('/sorted/'):
-        os.mkdir('/sorted/')
+    if not os.path.exists('/data/sorted/'):
+        os.mkdir('/data/sorted/')
     if not os.path.exists(new_path):
         os.mkdir(new_path)
     while True:
