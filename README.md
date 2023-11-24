@@ -72,8 +72,8 @@ If you want to get slack notifications you will need to make a slack bot
       chat:write, chat:write.customize, chat:write.public
 
 ## Troubleshooting
-If files are not moved/renamed it could be that script was unable to determine when the photo was taken, or it could be that the script was able to find GPS metadata but was unable to get a response from OpenMaps and did not rename the file so that it could try again the next time the script runs. 
+If files are not moved/renamed it could be that script was unable to determine when the photo was taken or it could be that the script was able to find GPS metadata but was unable to get a response from OpenMaps and did not rename the file so that it could try again the next time the script runs. 
 
-You can check the latest log file to determine why any file was not renamed, or why it was renamed a specific way.  I have only tested this with my own photos and videos.  Feel free to open an issue if you belive that the script is not renaming a file correctly. Please include the log file and the original name of the photo/video so I can find it in the log. 
+You can check the latest log file to determine why any file was not renamed, or why it was renamed a specific way.  I have only tested this with my own photos and videos.  Feel free to open an issue if you believe that the script is not renaming a file correctly. Please include the log file and the original name of the photo/video so I can find it in the log. 
 
 
