@@ -10,7 +10,6 @@ from exiftool import ExifToolHelper
 from datetime import datetime
 from geopy.geocoders import Nominatim
 import apo_logger
-import apo_slack
 
 def get_metadata(files, log):
     meta_dict = {}
@@ -20,35 +19,21 @@ def get_metadata(files, log):
     return meta_dict  
 
 def get_gps(file, user_agent, log):
-    if 'Composite:GPSLatitude' in file.keys():
-        # Sometimes metadata has the GPS tag but the value is ''
-        if file['Composite:GPSLatitude']:
-            log.debug('GPS Metadata using key Composite:GPSLatitude')
-            return(process_gps(
-                file['Composite:GPSLatitude'],
-                file['Composite:GPSLongitude'],
-                user_agent, log
-                ))
-    elif 'EXIF:GPSLatitude' in file.keys():
-        if file['EXIF:GPSLatitude']:
-            log.debug('GPS Metadata using key EXIF:GPSLatitude')
-            lat = convert_gps(
-                file['EXIF:GPSLatitude'],
-                file['EXIF:GPSLatitudeRef']
-                )
-            lon = convert_gps(
-                file['EXIF:GPSLongitude'],
-                file['EXIF:GPSLongitudeRef']
-                )
-            return(process_gps(lat, lon, user_agent), log)
+    if 'Composite:GPSLatitude' in file.keys() and file['Composite:GPSLatitude']:
+        log.debug('GPS Metadata using key Composite:GPSLatitude')
+        return process_gps(file['Composite:GPSLatitude'], file['Composite:GPSLongitude'], user_agent, log)
+    if 'EXIF:GPSLatitude' in file.keys() and file['EXIF:GPSLatitude']:
+        log.debug('GPS Metadata using key EXIF:GPSLatitude')
+        lat = convert_gps(file['EXIF:GPSLatitude'], file['EXIF:GPSLatitudeRef'])
+        lon = convert_gps(file['EXIF:GPSLongitude'], file['EXIF:GPSLongitudeRef'])
+        return process_gps(lat, lon, user_agent, log)
     log.info('NO GPS DATA')
     return ''
 
-'''
-Use geopy to interact with the Nominatim (OpenStreetMap) API
-At zoom level 10 Address returns City, County, State, Country
-'''
 def process_gps(lat, lon, user_agent, log):
+    """Use geopy to interact with the Nominatim (OpenStreetMap) API.
+    At zoom level 10 Address returns City, County, State, Country.
+    """
     log.debug(f'GPS Lat: {lat} Lon: {lon}')
     geolocator = Nominatim(user_agent=user_agent)
     location = geolocator.reverse(
@@ -79,7 +64,7 @@ def get_time(metadata, log):
         'EXIF:GPSDateStamp',
         'File:FileModifyDate',
         'File:FileInodeChangeDate'
-                     ]
+                    ]
     timestamp = ''
     for key in meta_priority:
         if key in metadata.keys():
@@ -111,24 +96,21 @@ def time_from_metadata(key, metadata, log):
             timestamp = ''
     return (timestamp)
 
-'''
-Most of the filenames that were made by a camera or phone have the date
-in order YYYY MM DD along with other info. Removing all non digit
-characters from the strings will put them all in the same order and
-slicing the first 8 get rid of any none date numbers.
-'''
 def time_from_name(filename, log):
+    """Most filenames from a camera or phone have the date in YYYY MM DD order.
+    Stripping non-digits and slicing to 8 characters normalises them all.
+    """
     log.debug(f'Getting time from Filename: {filename}')
     stripped = re.sub(r'\D', '', filename.rsplit('.', 1)[0])[:8]
     if not stripped.startswith('20'):
         log.warning(f'Could not extract time from {filename}')
         log.debug(f'{stripped} does not start with 20')
-    try:
-        dt = datetime.strptime(stripped[8], '%Y%m%d')
-        return (dt.strftime(f'%Y-%m-%d'))
-    except:
-        log.warning(f'Could not extract time from {filename}')
-        log.debug(f'{stripped} is not in YYYMMDD format')
+        try:
+            dt = datetime.strptime(stripped[:8], '%Y%m%d')
+            return (dt.strftime(f'%Y-%m-%d'))
+        except:
+            log.warning(f'Could not extract time from {filename}')
+            log.debug(f'{stripped} is not in YYYMMDD format')
     return ('')
 
 def sort_file(old_file, new_name, log):
@@ -153,16 +135,7 @@ def sort_file(old_file, new_name, log):
             log.info(f'{old_file} has been renamed {new_file}')
             break
 
-def alerts(file_count, config, log):
-    if config['slack']['use_slack'] == 'true':
-        apo_slack.send_alert(
-            file_count,
-            config['slack']['oauth'],
-            config['slack']['channel'],
-            log
-            )
-
-def main(files, config, alert):
+def main(files, config):
     log = apo_logger.new_log()
     log.debug(f'Config: \n {config}')
     log.debug(f'Found Files: \n {files}')
@@ -185,8 +158,6 @@ def main(files, config, alert):
             continue
         new_name = f'{timestamp}{city}.{ext}'
         sort_file(file['SourceFile'], new_name, log)
-    if alert:
-        alerts(len(files), config, log)
     apo_logger.cleanup_logs(config['max_logs'], log)
 
 if __name__ == '__main__':

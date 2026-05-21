@@ -20,24 +20,15 @@ def get_files():
 
 def main():
     apo_setup.setup()
-    last_file_count = 0
     with open('config.yaml', 'r') as file:
         config = yaml.safe_load(file)
 
     while True:
-        alert = False
         files = get_files()
         if not files:
-            last_file_count = 0
+            time.sleep(config['wait_time'])
             continue
-        file_count = len(files)
-        if (
-            file_count == last_file_count and
-            file_count >= config['alert_threshold']
-            ):
-            alert = True
-        apo.main(files, config, alert)
-        last_file_count = file_count
+        apo.main(files, config)
         time.sleep(config['wait_time'])
 
 if __name__ == '__main__':
