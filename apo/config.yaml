@@ -1,8 +1,9 @@
-alert_threshold: 10
+gps_retry_limit: 3
+logs_path: C:\Users\Ueno\Downloads\tmp\logs
 max_logs: 100
-slack:
-  channel: slack_channel_for_alerts
-  oauth: users_oauth_token
-  use_slack: false
-user_agent: APO-yyJnjJkGeL
+renumber_all: true
+sorted_path: C:\Users\Ueno\Downloads\tmp\Sorted
+unsorted_path: C:\Users\Ueno\Downloads\tmp\Unsorted
+user_agent: APO-eo1csue8s2
 wait_time: 80
+wait_time_minutes: 2

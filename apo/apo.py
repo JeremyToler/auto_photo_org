@@ -6,8 +6,10 @@ https://github.com/JeremyToler/auto_photo_org
 import os
 import shutil
 import re
+import yaml
 from exiftool import ExifToolHelper
 from datetime import datetime
+import time
 from geopy.geocoders import Nominatim
 import apo_logger
 
@@ -36,6 +38,7 @@ def process_gps(lat, lon, user_agent, log):
     """
     log.debug(f'GPS Lat: {lat} Lon: {lon}')
     geolocator = Nominatim(user_agent=user_agent)
+    time.sleep(1.5)
     location = geolocator.reverse(
         f'{lat}, {lon}',
         zoom = 10,
@@ -75,10 +78,14 @@ def get_time(metadata, log):
     return timestamp
 
 def verify_time(timestamp):
-    if datetime.strptime(timestamp[:10], f'%Y-%m-%d') > datetime.now():
-        return('')
-    else:
-        return(timestamp)
+    if not timestamp:
+        return ''
+    try:
+        if datetime.strptime(timestamp[:10], '%Y-%m-%d') > datetime.now():
+            return ''
+    except ValueError:
+        return ''
+    return timestamp
 
 def time_from_metadata(key, metadata, log):
     log.debug(f'Getting datetime from Metadata {key}: {metadata[key]}')
@@ -114,12 +121,12 @@ def time_from_name(filename, log):
         log.debug(f'{stripped} is not in YYYMMDD format')
     return ''
 
-def sort_file(old_file, new_name, log):
+def sort_file(old_file, new_name, sorted_path, log):
     i = 0
-    year_folder = os.path.join('/data/sorted/', new_name[:4])
+    year_folder = os.path.join(sorted_path, new_name[:4])
     new_file = os.path.join(year_folder, new_name)
-    if not os.path.exists('/data/sorted/'):
-        os.mkdir('/data/sorted/')
+    if not os.path.exists(sorted_path):
+        os.mkdir(sorted_path)
     if not os.path.exists(year_folder):
         os.mkdir(year_folder)
     while True:
@@ -180,35 +187,62 @@ def apply_numbering(folders, log):
                     log.info(f'Renamed to {new_path}')
 
 
+def load_tracker(tracker_path):
+    if os.path.exists(tracker_path):
+        with open(tracker_path, 'r') as f:
+            return yaml.safe_load(f) or {}
+    return {}
+
+def save_tracker(tracker, tracker_path):
+    with open(tracker_path, 'w') as f:
+        yaml.safe_dump(tracker, f)
+
+def update_tracker(tracker, filepath, reason):
+    entry = tracker.get(filepath, {'reason': reason, 'skip_count': 0})
+    entry['skip_count'] += 1
+    tracker[filepath] = entry
+
 def main(files, config):
-    log = apo_logger.new_log()
+    log, run_timestamp = apo_logger.new_log(config['logs_path'])
     log.debug(f'Config: \n {config}')
     log.debug(f'Found Files: \n {files}')
+    tracker_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'skipped.yaml')
+    tracker = load_tracker(tracker_path)
     meta_dict = get_metadata(files, log)
     touched_folders = set()
     for file in meta_dict:
-        log.info(f'Starting {file["SourceFile"]}')
+        filepath = file['SourceFile']
+        log.info(f'Starting {filepath}')
         timestamp = get_time(file, log)
-        if not timestamp: 
-            log.error('Unable to get date. Skipping File')
+        if not timestamp:
+            log.error(f'Unable to get date for {filepath}. Skipping.')
+            update_tracker(tracker, filepath, 'no_timestamp')
             continue
         try:
-            city = get_gps(file, config['user_agent'], log)
+            skip_count = tracker.get(filepath, {}).get('skip_count', 0)
+            if skip_count >= config['gps_retry_limit']:
+                log.warning(f'GPS retry limit reached for {filepath}, processing without GPS')
+                city = ''
+            else:
+                city = get_gps(file, config['user_agent'], log)
         except:
-            log.exception('GPS Error. Skipping File to try again later')
+            log.exception(f'GPS Error for {filepath}. Skipping to try again later.')
+            update_tracker(tracker, filepath, 'gps_failure')
             continue
         try:
             ext = file['File:FileName'].rsplit('.', 1)[1]
         except:
-            log.exception(f'File {file["File:FileName"]} has no extension')
+            log.exception(f'No extension found for {filepath}. Skipping.')
+            update_tracker(tracker, filepath, 'no_extension')
             continue
         new_name = f'{timestamp}{city}.{ext}'
-        year_folder = sort_file(file['SourceFile'], new_name, log)
+        year_folder = sort_file(filepath, new_name, config['sorted_path'], log)
         if year_folder:
             touched_folders.add(year_folder)
+        tracker.pop(filepath, None)
 
     if config['renumber_all']:
-        sorted_root = '/data/sorted/'
+        sorted_root = config['sorted_path']
         folders = [
             os.path.join(sorted_root, d) for d in os.listdir(sorted_root)
             if os.path.isdir(os.path.join(sorted_root, d))
@@ -219,7 +253,13 @@ def main(files, config):
     if folders:
         apply_numbering(folders, log)
 
-    apo_logger.cleanup_logs(config['max_logs'], log)
+    save_tracker(tracker, tracker_path)
+    snapshot_path = os.path.join(config['logs_path'], f'{run_timestamp}.skipped.yaml')
+    with open(snapshot_path, 'w') as f:
+        yaml.safe_dump(tracker, f)
+    log.debug(f'Skipped file snapshot saved to {snapshot_path}')
+
+    apo_logger.cleanup_logs(config['max_logs'], config['logs_path'], log)
 
 if __name__ == '__main__':
     main()
