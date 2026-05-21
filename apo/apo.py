@@ -105,22 +105,23 @@ def time_from_name(filename, log):
     if not stripped.startswith('20'):
         log.warning(f'Could not extract time from {filename}')
         log.debug(f'{stripped} does not start with 20')
-        try:
-            dt = datetime.strptime(stripped[:8], '%Y%m%d')
-            return (dt.strftime(f'%Y-%m-%d'))
-        except:
-            log.warning(f'Could not extract time from {filename}')
-            log.debug(f'{stripped} is not in YYYMMDD format')
-    return ('')
+        return ''
+    try:
+        dt = datetime.strptime(stripped[:8], '%Y%m%d')
+        return dt.strftime('%Y-%m-%d')
+    except:
+        log.warning(f'Could not extract time from {filename}')
+        log.debug(f'{stripped} is not in YYYMMDD format')
+    return ''
 
 def sort_file(old_file, new_name, log):
     i = 0
-    new_path = os.path.join('/data/sorted/', new_name[:4])
-    new_file = os.path.join(new_path, new_name)
+    year_folder = os.path.join('/data/sorted/', new_name[:4])
+    new_file = os.path.join(year_folder, new_name)
     if not os.path.exists('/data/sorted/'):
         os.mkdir('/data/sorted/')
-    if not os.path.exists(new_path):
-        os.mkdir(new_path)
+    if not os.path.exists(year_folder):
+        os.mkdir(year_folder)
     while True:
         split_name = new_file.rsplit('.', 1)
         if i > 0:
@@ -134,12 +135,57 @@ def sort_file(old_file, new_name, log):
             os.remove(old_file)
             log.info(f'{old_file} has been renamed {new_file}')
             break
+    return year_folder
+
+def apply_numbering(folders, log):
+    """Post-process sorted folders to apply clean numbering.
+    Single files have their counter stripped. Duplicates are renumbered
+    from 1 with only as many leading zeros as the group size requires.
+    A temp-rename pass is used to avoid conflicts during renaming.
+    """
+    for folder in folders:
+        if not os.path.exists(folder):
+            continue
+        groups = {}
+        for fname in sorted(os.listdir(folder)):
+            if not os.path.isfile(os.path.join(folder, fname)):
+                continue
+            match = re.match(r'^(.+)\.\d{4}\.([^.]+)$', fname)
+            if not match:
+                continue
+            base, ext = match.group(1), match.group(2)
+            groups.setdefault(base, []).append((fname, ext))
+
+        for base, files in groups.items():
+            if len(files) == 1:
+                fname, ext = files[0]
+                old_path = os.path.join(folder, fname)
+                new_path = os.path.join(folder, f'{base}.{ext}')
+                if os.path.exists(new_path):
+                    log.warning(f'Skipping rename, file already exists: {new_path}')
+                    continue
+                os.rename(old_path, new_path)
+                log.info(f'{old_path} renamed to {new_path}')
+            else:
+                width = len(str(len(files)))
+                temp_paths = []
+                for fname, _ in files:
+                    old_path = os.path.join(folder, fname)
+                    temp_path = old_path + '.tmp'
+                    os.rename(old_path, temp_path)
+                    temp_paths.append(temp_path)
+                for i, (temp_path, (_, ext)) in enumerate(zip(temp_paths, files), start=1):
+                    new_path = os.path.join(folder, f'{base}.{i:0{width}}.{ext}')
+                    os.rename(temp_path, new_path)
+                    log.info(f'Renamed to {new_path}')
+
 
 def main(files, config):
     log = apo_logger.new_log()
     log.debug(f'Config: \n {config}')
     log.debug(f'Found Files: \n {files}')
     meta_dict = get_metadata(files, log)
+    touched_folders = set()
     for file in meta_dict:
         log.info(f'Starting {file["SourceFile"]}')
         timestamp = get_time(file, log)
@@ -157,7 +203,22 @@ def main(files, config):
             log.exception(f'File {file["File:FileName"]} has no extension')
             continue
         new_name = f'{timestamp}{city}.{ext}'
-        sort_file(file['SourceFile'], new_name, log)
+        year_folder = sort_file(file['SourceFile'], new_name, log)
+        if year_folder:
+            touched_folders.add(year_folder)
+
+    if config['renumber_all']:
+        sorted_root = '/data/sorted/'
+        folders = [
+            os.path.join(sorted_root, d) for d in os.listdir(sorted_root)
+            if os.path.isdir(os.path.join(sorted_root, d))
+        ] if os.path.exists(sorted_root) else []
+    else:
+        folders = touched_folders
+
+    if folders:
+        apply_numbering(folders, log)
+
     apo_logger.cleanup_logs(config['max_logs'], log)
 
 if __name__ == '__main__':

@@ -11,6 +11,7 @@ def setup():
     config['user_agent'] = f'APO-{uid}'
     config['max_logs'] = int(environ.get('MAX_LOGS', 100))
     config['wait_time'] = int(environ.get('WAIT_TIME', 86400))
+    config['renumber_all'] = environ.get('RENUMBER_ALL', 'false').lower() in ('true', '1', 'y', 'yes', 'on')
 
     with open('config.yaml', 'w') as file:
         yaml.dump(config, file)
